@@ -1,0 +1,4009 @@
+local v, v2, defaultTab, Players, RunService, ReplicatedStorage, CoreGui, UserInputService, localPlayer
+local networking, safeRequire, GameModules, v3, randomId, registerCleanup, LegacyValues, createValueSlider, patchDropdown, Scheduler
+local HubState, mutationName, StealPriorities, v4, v5, espSection, tbl6, n, tbl7, tbl8
+local tbl9, tbl10, v6, sequence, tbl11
+
+do
+	local CollectionService, ProximityPromptService, v7, v8, tbl12, tbl13, tbl14, n2, n3, n4
+	local tbl15, str, tbl16, tbl17, tbl18, tbl19, tbl20, tbl21, v9, v10
+	local v11, createText, v12, v13, flag, tbl22, n5, tbl23, flag2, n6
+	local tbl24, fn8, fn9, fn10
+
+	do
+		local v14, v15, v16, v17, v18, n7
+
+		do
+
+			local function fn11()
+				local response = nil
+
+				local function fn12()
+					if type(response) == "string" and #response > 0 then
+						return response
+					end
+					response = game:HttpGet("https://raw.githubusercontent.com/tienkhanh1/spicy/main/Chilli%20Library")
+					return response
+				end
+
+				local function fn13()
+					local chilliHubSaeCleanup = (typeof(getgenv) == "function" and getgenv() or _G).ChilliHubSaeCleanup
+
+					if type(chilliHubSaeCleanup) == "function" then
+						pcall(chilliHubSaeCleanup)
+					end
+
+					local tbl25 = { game:GetService("CoreGui") }
+
+					if typeof(gethui) == "function" then
+						local ok, result = pcall(gethui)
+
+						if ok and typeof(result) == "Instance" then
+							table.insert(tbl25, result)
+						end
+					end
+
+					local tbl26 = {
+						Settings = true,
+						ChilliLeftCenter = true,
+						ChilliLibrarySettings = true,
+						ChilliLibraryLauncher = true,
+					}
+
+					local n8 = 0
+
+					for _, v19 in ipairs(tbl25) do
+						for _, child in ipairs(v19:GetChildren()) do
+							if child:IsA("ScreenGui") and (child:GetAttribute("ChilliLibraryOwned") == true or tbl26[child.Name]) then
+								pcall(function()
+									child:Destroy()
+								end)
+
+								n8 += 1
+							end
+						end
+					end
+				end
+
+				local function fn14()
+					local v19 = fn12()
+					local chunk, v20 = loadstring(v19)
+					assert(chunk, v20)
+					local v21 = chunk()
+					assert(type(v21) == "function", "Chilli Library bootstrap is invalid.")
+					local v22 = table.create(45)
+					local n8 = 1
+
+					for i = 1, 90, 2 do
+						v22[n8] = string.char(bit32.bxor(tonumber(string.sub("306908100841206d474f00185f26635b2101387507010810127d7d477a473b6f435a0916573165562900226c00", i, i + 1), 16), string.byte("s9K!2vQ#", (n8 - 1) % 8 + 1)))
+						n8 += 1
+					end
+
+					return v21(table.concat(v22))
+				end
+
+				local chilliLibraryFailedToLoad = "unknown"
+
+				for i = 1, 6 do
+					task.wait()
+					pcall(fn13)
+					local ok, result = pcall(fn14)
+					if ok and type(result) == "table" then
+						return result
+					end
+					chilliLibraryFailedToLoad = tostring(result)
+
+					if type(chilliLibraryFailedToLoad) == "string" and string.find(chilliLibraryFailedToLoad, "HttpGet", 1, true) then
+						response = nil
+					end
+					task.wait(1 + i * 0.5)
+				end
+
+				error("Chilli Library failed to load: " .. chilliLibraryFailedToLoad, 0)
+			end
+
+			v = fn11()
+			assert(type(v) == "table" and type(v.CreateWindow) == "function" and type(v.Finalize) == "function", "Chilli Library returned an invalid API.")
+
+			v.ManualQuickDefaults = {
+				PinnedFeatures = { "Player > Movement > Speed Boost", "Player > Movement > Boost Speed" },
+				Keybinds = { ["Player > Movement > Speed Boost"] = "Q" },
+				PinGroups = {},
+				LeftCenterHidden = true,
+			}
+
+			v2 = v:CreateWindow({ Name = "Chilli Hub - Steal An Egg", DefaultTab = "Farm" })
+			defaultTab = v2:GetDefaultTab()
+			Players = game:GetService("Players")
+			RunService = game:GetService("RunService")
+			ReplicatedStorage = game:GetService("ReplicatedStorage")
+			CoreGui = game:GetService("CoreGui")
+			UserInputService = game:GetService("UserInputService")
+			CollectionService = game:GetService("CollectionService")
+			game:GetService("LocalizationService")
+			ProximityPromptService = game:GetService("ProximityPromptService")
+			localPlayer = Players.LocalPlayer
+			networking = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Networking")
+
+			safeRequire = function(arg)
+				local ok, result = pcall(function()
+					return require(arg())
+				end)
+
+				return ok and result or nil
+			end
+
+			GameModules = {
+				EggState = safeRequire(function()
+					return ReplicatedStorage.Client.EggState
+				end),
+				AreaEggs = safeRequire(function()
+					return ReplicatedStorage.Shared.Types.AreaEggs
+				end),
+				ToolGameplayGuard = safeRequire(function()
+					return ReplicatedStorage.Client.ToolGameplayGuard
+				end),
+				Assets = safeRequire(function()
+					return ReplicatedStorage.Data.Assets
+				end),
+				Guards = safeRequire(function()
+					return ReplicatedStorage.Data.Guards
+				end),
+				EggRecords = safeRequire(function()
+					return ReplicatedStorage.Shared.Util.EggRecords
+				end),
+				Mutations = safeRequire(function()
+					return ReplicatedStorage.Shared.Modules.Mutations
+				end),
+				Save = safeRequire(function()
+					return ReplicatedStorage.Shared.Save
+				end),
+				FuseKernel = safeRequire(function()
+					return ReplicatedStorage.Shared.Util.FuseKernel
+				end),
+				AreaEggCycle = safeRequire(function()
+					return ReplicatedStorage.Shared.Util.AreaEggCycle
+				end),
+				AreaEggResetWall = safeRequire(function()
+					return ReplicatedStorage.Client.AreaEggResetWall
+				end),
+				AreaEggResetCycle = safeRequire(function()
+					return ReplicatedStorage.Data.AreaEggResetCycle
+				end),
+				Gears = safeRequire(function()
+					return ReplicatedStorage.Data.Gears
+				end),
+				Areas = safeRequire(function()
+					return ReplicatedStorage.Data.Areas
+				end),
+				LimitedEgg = safeRequire(function()
+					return ReplicatedStorage.Data.LimitedEgg
+				end),
+				BrainrotEgg = safeRequire(function()
+					return ReplicatedStorage.Data.BrainrotEgg
+				end),
+				MonsterEgg = safeRequire(function()
+					return ReplicatedStorage.Data.MonsterEgg
+				end),
+			}
+
+			local save = GameModules.Save
+
+			if type(save) == "table" and (type(save.Get) ~= "function" or type(save.FieldSignal) ~= "function") then
+				GameModules.Save = setmetatable({
+					Get = type(save.Get) == "function" and save.Get or save.Peek,
+					FieldSignal = type(save.FieldSignal) == "function" and save.FieldSignal or save.Watch,
+				}, { __index = save })
+			end
+
+			local function fn12()
+				if typeof(gethui) == "function" then
+					local ok, result = pcall(gethui)
+					if ok and typeof(result) == "Instance" then
+						return result
+					end
+				end
+
+				return CoreGui
+			end
+
+			v3 = fn12()
+
+			do
+				local v19 = Random.new()
+				local str2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+				randomId = function()
+					local v20 = v19:NextInteger(12, 20)
+					local v21 = table.create(v20)
+
+					for i = 1, v20 do
+						local v22 = v19:NextInteger(1, #str2)
+						v21[i] = string.sub("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", v22, v22)
+					end
+
+					return table.concat(v21)
+				end
+			end
+
+			do
+				local tbl25 = {}
+
+				registerCleanup = function(arg)
+					table.insert(tbl25, arg)
+				end
+
+				LegacyValues = {}
+
+				createValueSlider = function(arg, arg2)
+					local n8 = 1000
+					local n9 = 3
+					local n10 = 12
+
+					local function fn13(arg3)
+						if arg3 <= 0 then
+							return 0
+						end
+						local n11 = 10 ^ (math.floor(math.log10(arg3)) - 2)
+						return math.floor(arg3 / n11 + 0.5) * n11
+					end
+
+					local function fn14(arg3)
+						local n11 = math.clamp(tonumber(arg3) or 0, 0, 1000)
+						if n11 <= 0 then
+							return 0
+						end
+						return fn13(10 ^ (n9 + (n10 - n9) * n11 / n8))
+					end
+
+					local function fn15(arg3)
+						local n11 = tonumber(arg3) or 0
+						if n11 <= 0 then
+							return 0
+						end
+						return math.clamp(math.floor((math.log10(n11) - n9) / (n10 - n9) * n8 * 100 + 0.5) / 100, 0, 1000)
+					end
+
+					local function fn16(arg3)
+						local str2 = string.format(arg3 >= 100 and "%.0f" or arg3 >= 10 and "%.1f" or "%.2f", arg3)
+
+						if string.find(str2, ".", 1, true) then
+							str2 = string.gsub(string.gsub(str2, "0+$", ""), "%.$", "")
+						end
+
+						return str2
+					end
+
+					local function fn17(arg3)
+						local v19 = fn14(arg3)
+						if v19 <= 0 then
+							return "Off"
+						end
+
+						if v19 < 1000000 then
+							return fn16(v19 / 1000) .. " K/s"
+						end
+
+						if v19 < 1e9 then
+							return fn16(v19 / 1000000) .. " M/s"
+						end
+						return fn16(v19 / 1e9) .. " B/s"
+					end
+
+					local function fn18(arg3)
+						local v19 = fn14(arg3)
+						if v19 <= 0 then
+							return "0"
+						end
+
+						if v19 < 1000000 then
+							return fn16(v19 / 1000) .. "k"
+						end
+						return (string.gsub(string.gsub(string.format("%.3f", v19 / 1000000), "0+$", ""), "%.$", ""))
+					end
+
+					local tbl26 = { k = 1000, m = 1000000, b = 1e9, t = 1e12 }
+
+					local function fn19(arg3)
+						local v19 = string.gsub(string.lower(string.gsub(tostring(arg3 or ""), "[%s,/]", "")), "s$", "")
+						if v19 == "" or v19 == "off" then
+							return 0
+						end
+						local v20, v21 = string.match(v19, "^([%d%.]+)([kmbt]?)$")
+						local num = tonumber(v20)
+						if not num then
+							return nil
+						end
+						return fn15(num * (tbl26[v21] or 1000000))
+					end
+
+					local v19 = arg:CreateSlider({
+						Name = arg2.Name,
+						Note = arg2.Note,
+						SubOf = arg2.SubOf,
+						Min = 0,
+						Max = n8,
+						Default = fn15(arg2.Default or 0),
+						AllowDecimals = true,
+						Increment = 0.01,
+						ValueFormat = fn17,
+						ValueParse = fn19,
+						Callback = function(arg3)
+							if type(arg2.OnRaw) == "function" then
+								arg2.OnRaw(fn14(arg3))
+							end
+						end,
+					})
+
+					local value = type(v19) == "table" and rawget(v19, "Instance") or nil
+
+					if typeof(value) == "Instance" then
+						for _, descendant in ipairs(value:GetDescendants()) do
+							if descendant:IsA("TextBox") then
+								local connection = descendant.Focused:Connect(function()
+									task.defer(function()
+										if descendant:IsFocused() then
+											local ok, result = pcall(v19.Get, v19)
+											descendant.Text = fn18(ok and result or 0)
+											descendant.CursorPosition = #descendant.Text + 1
+											descendant.SelectionStart = 1
+										end
+									end)
+								end)
+
+								registerCleanup(function()
+									pcall(function()
+										connection:Disconnect()
+									end)
+								end)
+							end
+						end
+					end
+
+					if type(arg2.Legacy) == "string" and type(arg2.SectionName) == "string" then
+						table.insert(LegacyValues, { Handle = v19, Name = arg2.Name, Legacy = arg2.Legacy, Section = arg2.SectionName, StepOf = fn15 })
+					end
+
+					return v19
+				end
+
+				local text = "All"
+
+				patchDropdown = function(arg)
+					if type(arg) ~= "table" then
+						return arg
+					end
+					local value = rawget(arg, "Instance")
+					if typeof(value) ~= "Instance" then
+						return arg
+					end
+					local flag3 = false
+
+					local function fn13(arg2)
+						if flag3 then
+							return
+						end
+
+						if arg2.Text == "None" then
+							flag3 = true
+							arg2.Text = text
+							flag3 = false
+						end
+					end
+
+					local function fn14(descendant)
+						if not descendant:IsA("TextLabel") or descendant.Name ~= "Value" then
+							return
+						end
+						fn13(descendant)
+
+						local connection = descendant:GetPropertyChangedSignal("Text"):Connect(function()
+							fn13(descendant)
+						end)
+
+						registerCleanup(function()
+							pcall(function()
+								connection:Disconnect()
+							end)
+						end)
+					end
+
+					for _, descendant in ipairs(value:GetDescendants()) do
+						fn14(descendant)
+					end
+
+					local connection = value.DescendantAdded:Connect(fn14)
+
+					registerCleanup(function()
+						pcall(function()
+							connection:Disconnect()
+						end)
+					end)
+
+					return arg
+				end
+
+				local genv = typeof(getgenv) == "function" and getgenv() or _G
+				local chilliHubSaeCleanup = genv.ChilliHubSaeCleanup
+
+				if type(chilliHubSaeCleanup) == "function" then
+					pcall(chilliHubSaeCleanup)
+				end
+
+				genv.ChilliHubSaeCleanup = function()
+					for i = #tbl25, 1, -1 do
+						pcall(tbl25[i])
+					end
+
+					table.clear(tbl25)
+				end
+			end
+
+			do
+				local n8 = 0.35
+				local n9 = 5
+				local tbl25 = {}
+				local flag3 = true
+
+				Scheduler = {
+					Add = function(arg)
+						local tbl26 = { Run = arg, Gap = n8, Idle = n9, Repeat = false, Hold = 0 }
+						table.insert(tbl25, tbl26)
+						return tbl26
+					end,
+					Wake = function()
+						flag3 = true
+					end,
+					Backoff = function(arg, arg2)
+						if arg then
+							arg.Hold = tonumber(arg2) or 6
+						end
+					end,
+				}
+
+				local connection = RunService.Heartbeat:Connect(function(deltaTime)
+					local v19 = flag3
+					flag3 = false
+
+					for _, v20 in ipairs(tbl25) do
+						v20.Gap = v20.Gap + deltaTime
+						v20.Idle = v20.Idle + deltaTime
+
+						if v20.Hold > 0 then
+							v20.Hold = v20.Hold - deltaTime
+						else
+							local flag4 = v20.Gap >= n8
+							local repeat_
+
+							if flag4 then
+								repeat_ = v19 or v20.Repeat or v20.Idle >= n9
+							else
+								repeat_ = flag4
+							end
+
+							if repeat_ then
+								v20.Gap = 0
+								v20.Idle = 0
+								local ok, result = pcall(v20.Run, v20)
+								v20.Repeat = ok and result == true
+							end
+						end
+					end
+				end)
+
+				registerCleanup(function()
+					connection:Disconnect()
+				end)
+			end
+
+			v7 = defaultTab:CreateSection({ Name = "Dr Scramble Lab & Mech", Expanded = false })
+			local v19
+			v19 = defaultTab:CreateSection({ Name = "Auto Steal", Expanded = true })
+			v14 = defaultTab:CreateSection({ Name = "Auto Place Egg", Expanded = false })
+			v15 = defaultTab:CreateSection({ Name = "Auto Treadmill", Expanded = false })
+			v16 = defaultTab:CreateSection({ Name = "Auto Hatch & Equip", Expanded = false })
+			v17 = defaultTab:CreateSection({ Name = "Auto Sell", Expanded = false })
+			v18 = defaultTab:CreateSection({ Name = "Auto Fuse Machine", Expanded = false })
+			v8 = defaultTab:CreateSection({ Name = "Auto Favorite", Expanded = false })
+			tbl12 = { Paused = false }
+
+			do
+				local n8 = 0.5
+				local v20 = nil
+				local tbl25 = nil
+				local tbl26 = {}
+				local flag3 = false
+				local n9 = 0
+
+				local function fn13()
+					for i = #tbl26, 1, -1 do
+						local v21 = tbl26[i]
+
+						if v21 and v21.Connected then
+							v21:Disconnect()
+						end
+
+						tbl26[i] = nil
+					end
+				end
+
+				local function fn14()
+					fn13()
+					local v21 = v20
+					local v22 = tbl25
+					v20 = nil
+					tbl25 = nil
+					if not v21 or not v21.Parent or not v22 then
+						return
+					end
+
+					pcall(function()
+						v21.BreakJointsOnDeath = v22.BreakJointsOnDeath
+						v21.RequiresNeck = v22.RequiresNeck
+						v21:SetStateEnabled(Enum.HumanoidStateType.Dead, v22.DeadEnabled)
+					end)
+				end
+
+				local function fn15(arg)
+					if not arg or not arg.Parent then
+						return false
+					end
+
+					return pcall(function()
+						arg.BreakJointsOnDeath = false
+						arg.RequiresNeck = false
+						arg:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+					end) and arg.BreakJointsOnDeath == false and arg.RequiresNeck == false and arg:GetStateEnabled(Enum.HumanoidStateType.Dead) == false
+				end
+
+				local function fn16(arg)
+					if tbl12.Paused or arg ~= v20 or not arg or not arg.Parent or flag3 then
+						return false
+					end
+					local maxHealth = arg.MaxHealth
+					if maxHealth <= 0 then
+						return false
+					end
+
+					if maxHealth == math.huge or arg.Health >= maxHealth then
+						return true
+					end
+					flag3 = true
+
+					local ok = pcall(function()
+						arg.Health = maxHealth
+					end)
+
+					flag3 = false
+					return ok and arg.Health >= maxHealth
+				end
+
+				local function fn17(arg)
+					if arg == v20 and arg and arg.Parent then
+						return true
+					end
+					fn14()
+					if not arg or not arg:IsA("Humanoid") or not arg.Parent then
+						return false
+					end
+					v20 = arg
+
+					tbl25 = {
+						BreakJointsOnDeath = arg.BreakJointsOnDeath,
+						RequiresNeck = arg.RequiresNeck,
+						DeadEnabled = arg:GetStateEnabled(Enum.HumanoidStateType.Dead),
+					}
+
+					if not fn15(arg) then
+						fn14()
+						return false
+					end
+					fn16(arg)
+
+					tbl26[#tbl26 + 1] = arg.HealthChanged:Connect(function()
+						fn16(arg)
+					end)
+
+					tbl26[#tbl26 + 1] = arg:GetPropertyChangedSignal("MaxHealth"):Connect(function()
+						fn16(arg)
+					end)
+
+					tbl26[#tbl26 + 1] = arg.StateChanged:Connect(function(old, new)
+						if new == Enum.HumanoidStateType.Dead and not tbl12.Paused then
+							fn15(arg)
+							fn16(arg)
+						end
+					end)
+
+					n9 = os.clock()
+					return true
+				end
+
+				local function fn18()
+					local character = localPlayer.Character
+					return character and character:FindFirstChildOfClass("Humanoid") or nil
+				end
+
+				local connection = localPlayer.CharacterAdded:Connect(function()
+					task.defer(function()
+						fn17(fn18())
+					end)
+				end)
+
+				local connection2 = RunService.Heartbeat:Connect(function()
+					local now = os.clock()
+					if tbl12.Paused or now - n9 < n8 then
+						return
+					end
+					n9 = now
+					local v21 = fn18()
+					if v21 ~= v20 then
+						fn17(v21)
+						return
+					end
+
+					if v21 then
+						fn15(v21)
+						fn16(v21)
+					end
+				end)
+
+				task.defer(function()
+					fn17(fn18())
+				end)
+
+				registerCleanup(function()
+					if connection then
+						connection:Disconnect()
+					end
+
+					if connection2 then
+						connection2:Disconnect()
+					end
+
+					fn14()
+				end)
+			end
+
+			local tbl25 = { "bat", "katana", "axe", "staff", "club", "hammer", "sword", "blade" }
+
+			HubState = {
+				Steal = { Active = false, LastFinishedAt = 0, Carrying = false },
+				SafeCarry = {
+					Enabled = true,
+					SkipUnsafe = false,
+					WaitGuard = false,
+					SameSpeedBigEggs = false,
+					Blocked = {},
+					StretchSeconds = 6,
+					BeatGuard = false,
+					SlowUntil = 0,
+					SlowFactor = 0.3,
+					LineDrop = false,
+					LineGap = 12,
+					LineWait = 15,
+					DirectBudget = 450,
+					DirectMargin = 0.3,
+					CrossNow = false,
+					CrossSpeed = 231,
+					PickupSpeed = 154,
+					HopRatio = 1.515,
+					CrossRatio = 1,
+					PickupRatio = 0.667,
+					FarFromLine = 150,
+					DropDelay = 0.19,
+					LineApproach = 0.97,
+					ReJump = true,
+					ShakeTime = 0,
+					SnapPickup = false,
+					Hops = true,
+					HopStep = 350,
+					HopGap = 0.1,
+					HopLift = 42,
+					HopStop = 48,
+					GetUp = true,
+					ShakeInside = 1,
+					CarryScale = 1,
+					EasyRatio = 1.3,
+					LastSkip = nil,
+					Category = nil,
+					PlanOk = true,
+					LightMult = 0.96,
+					Height = 70,
+					ClimbShare = 0.5,
+					Approach = "Run",
+					RunSpeed = 1,
+					RunWait = 0,
+					RunAnimate = true,
+					RunHeight = 50,
+					SnapLimit = 90,
+					StraightRun = true,
+					RunStyle = "Velocity",
+					CarryStyle = "Velocity",
+					SpeedJitter = 0.08,
+					Wobble = 0,
+					LaneOffset = 0,
+					JumpsPerMinute = 0,
+					PausesPerMinute = 0,
+					ReactMin = 0.2,
+					ReactMax = 0.6,
+					CarryReact = 0,
+					SpeedRatio = 1.5,
+					ExcessSeconds = 5.5,
+					GuardMargin = 4,
+					GuardRatio = 1.06,
+					MinRatio = 1.1,
+					BaseWait = 6.5,
+					FreeJump = 1500,
+					WaitRate = 0.9,
+					RecoverTries = math.huge,
+					GuessMult = 0.93,
+					CarryRatio = 0.9,
+					Mult = 1,
+					Seen = {},
+					JumpDistance = 0,
+					JumpAt = 0,
+					LastDelivered = 0,
+					LastFailed = 0,
+					Handle = nil,
+				},
+				Movement = {
+					Owner = nil,
+					PlaceWanted = false,
+					StealFirst = false,
+					MutationWanted = false,
+					FracturedWanted = false,
+				},
+				AntiGuard = {
+					Enabled = false,
+					Busy = false,
+					BusySince = 0,
+					HitArms = 0,
+					Handle = nil,
+					Render = nil,
+				},
+				IsBatTool = function(arg)
+					if typeof(arg) ~= "Instance" or not arg:IsA("Tool") then
+						return false
+					end
+
+					if arg:GetAttribute("IsBat") == true then
+						return true
+					end
+					local attribute = arg:GetAttribute("GearName")
+
+					if type(attribute) == "string" then
+						local gears = GameModules.Gears
+						local directory = type(gears) == "table" and gears.Directory or nil
+						local flag3 = type(directory) == "table" and directory[attribute] or nil
+						return type(flag3) == "table" and flag3.BatControllerData ~= nil
+					end
+
+					if arg:GetAttribute("ItemType") ~= nil then
+						return false
+					end
+					local v20 = string.lower(arg.Name)
+
+					for _, v21 in ipairs(tbl25) do
+						if string.find(v20, v21, 1, true) then
+							return true
+						end
+					end
+
+					return false
+				end,
+				FindBat = function()
+					local character = localPlayer.Character
+					local tool = character and character:FindFirstChildWhichIsA("Tool")
+					if HubState.IsBatTool(tool) then
+						return tool
+					end
+					local backpack = localPlayer:FindFirstChildOfClass("Backpack")
+
+					if backpack then
+						for _, child in ipairs(backpack:GetChildren()) do
+							if HubState.IsBatTool(child) then
+								return child
+							end
+						end
+					end
+
+					if character then
+						for _, child in ipairs(character:GetChildren()) do
+							if HubState.IsBatTool(child) then
+								return child
+							end
+						end
+					end
+
+					return nil
+				end,
+				IsNight = function()
+					local areaEggCycle = GameModules.AreaEggCycle
+					if type(areaEggCycle) ~= "table" or type(areaEggCycle.IsNightPhase) ~= "function" then
+						return false
+					end
+					local ok, result = pcall(areaEggCycle.IsNightPhase, workspace:GetServerTimeNow())
+					return ok and result == true
+				end,
+				WallSealed = function()
+					local areaEggResetWall = GameModules.AreaEggResetWall
+					if type(areaEggResetWall) ~= "table" or type(areaEggResetWall.IsSealed) ~= "function" then
+						return false
+					end
+					local ok, result = pcall(areaEggResetWall.IsSealed)
+					return ok and result == true
+				end,
+				WallOpenDelay = function()
+					local areaEggResetCycle = GameModules.AreaEggResetCycle
+					if type(areaEggResetCycle) ~= "table" then
+						return 5
+					end
+					return (tonumber(areaEggResetCycle.WallCountdownDelayAfterDayStartsSeconds) or 2) + (tonumber(areaEggResetCycle.WallCountdownSeconds) or 3)
+				end,
+				ClaimMovement = function(owner)
+					local movement = HubState.Movement
+					if movement.Owner == nil or movement.Owner == owner or movement.Owner == "treadmill" and owner ~= "treadmill" or movement.Owner == "scramble" and owner == "steal" then
+						movement.Owner = owner
+						return true
+					end
+					return false
+				end,
+				ReleaseMovement = function(arg)
+					if HubState.Movement.Owner == arg then
+						HubState.Movement.Owner = nil
+					end
+				end,
+			}
+
+			do
+				local shieldMethods = { "Humanoid Swap", "Disable Monitor" }
+				HubState.ShieldMethods = shieldMethods
+				local v20 = shieldMethods[1]
+				local tbl26 = {}
+				local tbl27 = {}
+				local connection = nil
+				local n8 = 0
+				local tbl28 = { Original = nil, Clone = nil, Links = {} }
+				local connection2 = nil
+				local tbl29 = {}
+
+				local function fn13()
+					for _, v21 in ipairs(tbl29) do
+						task.defer(function()
+							pcall(v21)
+						end)
+					end
+				end
+
+				HubState.OnHumanoidChanged = function(arg)
+					table.insert(tbl29, arg)
+					local tbl30
+
+					tbl30 = {
+						Connected = true,
+						Disconnect = function()
+							tbl30.Connected = false
+							local v21 = table.find(tbl29, arg)
+
+							if v21 then
+								table.remove(tbl29, v21)
+							end
+						end,
+					}
+
+					return tbl30
+				end
+
+				local function fn14(humanoid)
+					pcall(function()
+						local playerScripts = localPlayer:FindFirstChild("PlayerScripts")
+						local playerModule = playerScripts and playerScripts:FindFirstChild("PlayerModule")
+
+						if playerModule then
+							local controls = require(playerModule):GetControls()
+
+							if type(controls) == "table" then
+								controls.humanoid = humanoid
+							end
+						end
+					end)
+				end
+
+				local function fn15(arg)
+					local animate = arg and arg:FindFirstChild("Animate")
+
+					if animate and animate:IsA("LocalScript") then
+						task.spawn(function()
+							animate.Enabled = false
+							task.wait()
+							animate.Enabled = true
+						end)
+					end
+				end
+
+				local function fn16()
+					for _, link in ipairs(tbl28.Links) do
+						pcall(function()
+							link:Disconnect()
+						end)
+					end
+
+					table.clear(tbl28.Links)
+				end
+
+				HubState.UndoSwap = function()
+					fn16()
+					local character = localPlayer.Character
+					local original = tbl28.Original
+					local clone = tbl28.Clone
+					local v21 = tbl28
+					tbl28.Original = nil
+					v21.Clone = nil
+
+					if original and clone and character and original.Parent == nil and clone.Parent == character then
+						original.Parent = character
+						workspace.CurrentCamera.CameraSubject = original
+						fn14(original)
+
+						pcall(function()
+							clone:Destroy()
+						end)
+
+						fn15(character)
+						fn13()
+					end
+				end
+
+				local tbl30 = {
+					[Enum.HumanoidStateType.Running] = true,
+					[Enum.HumanoidStateType.RunningNoPhysics] = true,
+					[Enum.HumanoidStateType.Landed] = true,
+				}
+
+				HubState.Grounded = function(arg)
+					if not arg then
+						local character = localPlayer.Character
+						arg = character and character:FindFirstChildOfClass("Humanoid")
+					end
+
+					if not arg or arg.Health <= 0 or arg.FloorMaterial == Enum.Material.Air then
+						return false
+					end
+					return tbl30[arg:GetState()] == true
+				end
+
+				HubState.ShieldPaused = false
+
+				HubState.WalkSpeed = function()
+					local character = localPlayer.Character
+					character = character and character:FindFirstChildOfClass("Humanoid")
+					character = character and character.WalkSpeed or 16
+					local original = tbl28.Original
+
+					if original and original.Health > 0 then
+						character = math.min(character, original.WalkSpeed)
+					end
+
+					local ok, result = pcall(function()
+						local leaderstats = localPlayer:FindFirstChild("leaderstats")
+						leaderstats = leaderstats and leaderstats:FindFirstChild("Speed")
+						local TreadmillUtil = require(ReplicatedStorage.Shared.Util.TreadmillUtil)
+						return leaderstats and TreadmillUtil.SpeedPowerToWalkSpeed(leaderstats.Value) or nil
+					end)
+
+					local n9
+
+					if ok and tonumber(result) and result > 0 then
+						n9 = math.min(character, result)
+					else
+						n9 = character
+					end
+
+					return n9
+				end
+
+				local function fn17()
+					local character = localPlayer.Character
+					local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+					if not humanoid or humanoid.Health <= 0 then
+						return
+					end
+
+					if tbl28.Clone and tbl28.Clone.Parent == character then
+						return
+					end
+
+					if not HubState.Grounded(humanoid) then
+						return
+					end
+					local clone = humanoid:Clone()
+					humanoid.Parent = nil
+					clone.Parent = character
+					workspace.CurrentCamera.CameraSubject = clone
+					fn14(clone)
+					fn15(character)
+					local v21 = tbl28
+					tbl28.Original = humanoid
+					v21.Clone = clone
+					fn13()
+
+					table.insert(tbl28.Links, humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+						if clone.Parent ~= nil then
+							clone.WalkSpeed = humanoid.WalkSpeed
+						end
+					end))
+
+					local animator = humanoid:FindFirstChildOfClass("Animator")
+					local animator2 = clone:FindFirstChildOfClass("Animator")
+
+					if animator and animator2 then
+						table.insert(tbl28.Links, animator.AnimationPlayed:Connect(function(arg)
+							local animation = arg.Animation
+							if not animation or clone.Parent == nil then
+								return
+							end
+
+							local ok, result = pcall(function()
+								return animator2:LoadAnimation(animation)
+							end)
+
+							if not ok or not result then
+								return
+							end
+
+							pcall(function()
+								result.Priority = arg.Priority
+								result.Looped = arg.Looped
+								local speed = arg.Speed
+								result:Play(0.05, math.max(arg.WeightTarget, 0.01), speed)
+							end)
+
+							local connection3 = nil
+
+							connection3 = arg.Stopped:Connect(function()
+								connection3:Disconnect()
+
+								pcall(function()
+									result:Stop(0.1)
+								end)
+							end)
+						end))
+					end
+
+					table.insert(tbl28.Links, clone.Died:Connect(function()
+						fn16()
+						local v22 = tbl28
+						tbl28.Original = nil
+						v22.Clone = nil
+						local character2 = localPlayer.Character
+
+						if character2 and humanoid.Parent == nil then
+							humanoid.Parent = character2
+							workspace.CurrentCamera.CameraSubject = humanoid
+							fn14(humanoid)
+							fn13()
+						end
+
+						pcall(function()
+							clone:Destroy()
+						end)
+
+						humanoid.Health = 0
+					end))
+				end
+
+				local function fn18()
+					if type(getconnections) ~= "function" then
+						return
+					end
+
+					for _, v21 in ipairs({ RunService.Heartbeat, RunService.PreSimulation, RunService.PostSimulation }) do
+						local ok, result = pcall(getconnections, v21)
+
+						if ok and type(result) == "table" then
+							for _, v22 in ipairs(result) do
+								local ok2, result2 = pcall(function()
+									return v22.Function
+								end)
+
+								local flag3 = ok2 and type(result2) == "function"
+								local flag4 = false
+								local result3 = nil
+
+								if flag3 then
+									flag4, result3 = pcall(debug.info, result2, "s")
+								end
+
+								if flag4 and string.find(tostring(result3), "UGI", 1, true) then
+									local ok3, result4 = pcall(function()
+										return v22.Enabled
+									end)
+
+									if not ok3 or result4 ~= false then
+										if pcall(function()
+											v22:Disable()
+										end) then
+											table.insert(tbl27, v22)
+										end
+									end
+								end
+							end
+						end
+					end
+				end
+
+				local function fn19()
+					if connection then
+						connection:Disconnect()
+						connection = nil
+					end
+
+					if connection2 then
+						connection2:Disconnect()
+						connection2 = nil
+					end
+
+					for _, v21 in ipairs(tbl27) do
+						pcall(function()
+							v21:Enable()
+						end)
+					end
+
+					table.clear(tbl27)
+				end
+
+				local function fn20()
+					if HubState.ShieldPaused then
+						return
+					end
+
+					if v20 == shieldMethods[1] then
+						fn17()
+					else
+						fn18()
+					end
+				end
+
+				local function fn21()
+					fn20()
+					n8 = 0
+
+					connection = RunService.Heartbeat:Connect(function(deltaTime)
+						n8 += deltaTime
+						local character = localPlayer.Character
+						local flag3 = v20 == shieldMethods[1]
+
+						if flag3 then
+							flag3 = not (tbl28.Clone and character and tbl28.Clone.Parent == character)
+						end
+
+						if (flag3 and 0.25 or 3) <= n8 then
+							n8 = 0
+							fn20()
+						end
+					end)
+
+					connection2 = localPlayer.CharacterAdded:Connect(function(character)
+						fn16()
+						local v21 = tbl28
+						tbl28.Original = nil
+						v21.Clone = nil
+						if v20 ~= shieldMethods[1] then
+							return
+						end
+
+						task.spawn(function()
+							character:WaitForChild("Humanoid", 10)
+							task.wait(1)
+
+							if connection and localPlayer.Character == character then
+								fn20()
+							end
+						end)
+					end)
+				end
+
+				HubState.Swapped = function()
+					if v20 ~= shieldMethods[1] then
+						return true
+					end
+					local character = localPlayer.Character
+					return tbl28.Clone ~= nil and character ~= nil and tbl28.Clone.Parent == character
+				end
+
+				HubState.Shield = function(arg, arg2)
+					tbl26[arg] = arg2 == true or nil
+					if next(tbl26) == nil then
+						fn19()
+						return
+					end
+
+					if connection then
+						return
+					end
+					fn21()
+				end
+
+				HubState.SetShieldMethod = function(arg)
+					if not table.find(shieldMethods, arg) or arg == v20 then
+						return
+					end
+					local flag3 = connection ~= nil
+					fn19()
+					v20 = arg
+
+					if flag3 and next(tbl26) ~= nil then
+						fn21()
+					end
+				end
+
+				registerCleanup(fn19)
+			end
+
+			HubState.Shield("load", true)
+
+			HubState.Toggle = function(arg, arg2)
+				if type(arg) ~= "table" then
+					return arg2 == true
+				end
+
+				local ok, result = pcall(function()
+					local controller = arg._controller
+					return type(controller) == "table" and type(controller.GetValue) == "function" and controller.GetValue()
+				end)
+
+				if ok and type(result) == "boolean" then
+					return result
+				end
+
+				for _, v20 in ipairs({ "Get", "GetValue" }) do
+					local ok2, result2 = pcall(function()
+						return arg[v20]
+					end)
+
+					if ok2 and type(result2) == "function" then
+						local ok3, result3 = pcall(result2, arg)
+						if ok3 and type(result3) == "boolean" then
+							return result3
+						end
+					end
+				end
+
+				return arg2 == true
+			end
+
+			HubState.Root = function()
+				local character = localPlayer.Character
+				character = character and character:FindFirstChild("HumanoidRootPart")
+				return character and character:IsDescendantOf(workspace) and character or nil
+			end
+
+			HubState.PlacedPoints = function()
+				local placedEggRenders = workspace:FindFirstChild("PlacedEggRenders")
+				local tbl26 = {}
+				if not placedEggRenders then
+					return tbl26
+				end
+				local str2 = tostring(localPlayer.UserId)
+
+				for _, child in ipairs(placedEggRenders:GetChildren()) do
+					if string.find(child.Name, str2, 1, true) then
+						local ok, result = pcall(function()
+							return child:IsA("Model") and child:GetPivot() or child.CFrame
+						end)
+
+						if ok then
+							table.insert(tbl26, result.Position)
+						end
+					end
+				end
+
+				return tbl26
+			end
+
+			HubState.OwnPlot = function()
+				local plots = workspace:FindFirstChild("Plots")
+				if not plots then
+					return nil
+				end
+
+				for _, child in ipairs(plots:GetChildren()) do
+					local plotSign = child:FindFirstChild("PlotSign")
+					plotSign = plotSign and plotSign:FindFirstChild("PlayerPlotSign")
+					plotSign = plotSign and plotSign:FindFirstChild("Frame")
+					plotSign = plotSign and plotSign:FindFirstChild("PlayerName")
+
+					if plotSign and plotSign:IsA("TextLabel") then
+						local v20 = string.lower(plotSign.Text)
+						if v20 == string.lower(localPlayer.Name) or v20 == string.lower(localPlayer.DisplayName) then
+							return child
+						end
+					end
+				end
+
+				return nil
+			end
+
+			local function fn13()
+				local v20 = HubState.PlacedPoints()
+				if #v20 == 0 then
+					return nil
+				end
+				local vector = Vector3.zero
+
+				for _, v21 in ipairs(v20) do
+					vector += v21
+				end
+
+				return vector / #v20
+			end
+
+			HubState.PenAnchor = function()
+				local v20 = fn13()
+				if v20 then
+					return v20
+				end
+				local v21 = HubState.OwnPlot()
+				if not v21 then
+					return nil
+				end
+				local toUpdate = v21:FindFirstChild("ToUpdate")
+				local starterPen = toUpdate and toUpdate:FindFirstChild("StarterPen") or v21:FindFirstChild("CenterPoint")
+				if not starterPen then
+					return nil
+				end
+
+				local ok, result = pcall(function()
+					return starterPen:IsA("Model") and starterPen:GetPivot() or starterPen.CFrame
+				end)
+
+				return ok and result.Position or nil
+			end
+
+			HubState.Plot = function()
+				local v20 = HubState.OwnPlot()
+				if v20 then
+					return v20
+				end
+				local plots = workspace:FindFirstChild("Plots")
+				local v21 = fn13()
+				if not plots or not v21 then
+					return nil
+				end
+				local huge = math.huge
+				local v22 = nil
+
+				for _, child in ipairs(plots:GetChildren()) do
+					local ok, result, result2 = pcall(function()
+						return child:GetBoundingBox()
+					end)
+
+					if ok and result and result2 then
+						local v23 = result:PointToObjectSpace(v21)
+						local n8 = result2.X / 2
+						local flag3 = math.abs(v23.X) <= n8
+						local flag4
+
+						if flag3 then
+							local n9 = result2.Z / 2
+							flag4 = math.abs(v23.Z) <= n9
+						else
+							flag4 = flag3
+						end
+
+						if flag4 then
+							return child
+						end
+						local magnitude = (result.Position - v21).Magnitude
+
+						if magnitude < huge then
+							v22 = child
+							huge = magnitude
+						end
+					end
+				end
+
+				if v22 and huge <= 60 then
+					return v22
+				end
+				return nil
+			end
+
+			HubState.Belt = function()
+				local v20 = HubState.Plot()
+				if not v20 then
+					return nil
+				end
+				local treadmillBottom = v20:FindFirstChild("TreadmillBottom")
+				if treadmillBottom and treadmillBottom:IsA("BasePart") then
+					return treadmillBottom
+				end
+				local clientTreadmillRenders = workspace:FindFirstChild("__ClientTreadmillRenders")
+				clientTreadmillRenders = clientTreadmillRenders and clientTreadmillRenders:FindFirstChild("TreadmillRender_" .. v20.Name)
+
+				if clientTreadmillRenders then
+					clientTreadmillRenders = clientTreadmillRenders:FindFirstChild("BoundingBoxPart") or clientTreadmillRenders:IsA("Model") and clientTreadmillRenders.PrimaryPart or clientTreadmillRenders:FindFirstChildWhichIsA("BasePart")
+				end
+
+				if clientTreadmillRenders then
+					return clientTreadmillRenders
+				end
+				local treadmillUpgrade = v20:FindFirstChild("TreadmillUpgrade")
+				return treadmillUpgrade and treadmillUpgrade:FindFirstChildWhichIsA("BasePart") or nil
+			end
+
+			HubState.DistanceTo = function(arg)
+				local v20 = HubState.Root()
+				if not v20 or not arg then
+					return math.huge
+				end
+				return (v20.Position - arg).Magnitude
+			end
+
+			do
+				local tbl26 = {}
+				local n8 = 0
+
+				local function fn14()
+					local v20 = HubState.Plot()
+					if not v20 then
+						return {}
+					end
+					local tbl27 = {}
+
+					for _, v21 in ipairs({ "TreadmillBottom", "TreadmillUpgrade" }) do
+						local v22 = v20:FindFirstChild(v21)
+
+						if v22 then
+							if v22:IsA("BasePart") then
+								table.insert(tbl27, v22)
+							else
+								for _, descendant in ipairs(v22:GetDescendants()) do
+									if descendant:IsA("BasePart") then
+										table.insert(tbl27, descendant)
+									end
+								end
+							end
+						end
+					end
+
+					local clientTreadmillRenders = workspace:FindFirstChild("__ClientTreadmillRenders")
+					clientTreadmillRenders = clientTreadmillRenders and clientTreadmillRenders:FindFirstChild("TreadmillRender_" .. v20.Name)
+
+					if clientTreadmillRenders then
+						for _, descendant in ipairs(clientTreadmillRenders:GetDescendants()) do
+							if descendant:IsA("BasePart") then
+								table.insert(tbl27, descendant)
+							end
+						end
+					end
+
+					return tbl27
+				end
+
+				local function fn15()
+					for _, v20 in ipairs(fn14()) do
+						if not tbl26[v20] then
+							tbl26[v20] = {
+								CFrame = v20.CFrame,
+								CanTouch = v20.CanTouch,
+								CanCollide = v20.CanCollide,
+								Transparency = v20.Transparency,
+							}
+
+							pcall(function()
+								v20.CanTouch = false
+								v20.CanCollide = false
+								v20.Transparency = 1
+								v20.CFrame = v20.CFrame - Vector3.new(0, 120, 0)
+							end)
+						end
+					end
+				end
+
+				local function fn16()
+					for k, v20 in pairs(tbl26) do
+						if k and k.Parent then
+							pcall(function()
+								k.CFrame = v20.CFrame
+								k.CanTouch = v20.CanTouch
+								k.CanCollide = v20.CanCollide
+								k.Transparency = v20.Transparency
+							end)
+						end
+					end
+
+					table.clear(tbl26)
+				end
+
+				HubState.HoldBelt = function()
+					n8 += 1
+					fn15()
+				end
+
+				HubState.ReleaseBelt = function()
+					n8 = math.max(0, n8 - 1)
+
+					if n8 == 0 then
+						fn16()
+					end
+				end
+
+				HubState.BeltHeld = function()
+					return n8 > 0
+				end
+
+				HubState.RefreshBeltHide = function()
+					if n8 > 0 then
+						fn15()
+					end
+				end
+
+				registerCleanup(function()
+					n8 = 0
+					fn16()
+				end)
+
+				HubState.LeaveBelt = function()
+					local rfTreadmillAskDoff = networking:FindFirstChild("RF/Treadmill/AskDoff")
+
+					if rfTreadmillAskDoff and rfTreadmillAskDoff:IsA("RemoteFunction") then
+						pcall(rfTreadmillAskDoff.InvokeServer, rfTreadmillAskDoff)
+					end
+				end
+
+				HubState.Treadmill = { Riding = false }
+
+				HubState.ResetBelt = function()
+					n8 = 0
+					fn16()
+				end
+
+				HubState.OnBelt = function()
+					local v20 = HubState.Belt()
+					if not v20 or tbl26[v20] then
+						return false
+					end
+					local v21 = HubState.Root()
+					if not v21 then
+						return false
+					end
+					local v22 = v20.CFrame:PointToObjectSpace(v21.Position)
+					local n9 = v20.Size.X / 2 + 2
+					local flag3 = math.abs(v22.X) <= n9
+
+					if flag3 then
+						local n10 = v20.Size.Z / 2 + 2
+						flag3 = math.abs(v22.Z) <= n10
+					end
+
+					return flag3 and v22.Y >= -2 and v22.Y <= v20.Size.Y / 2 + 8
+				end
+			end
+
+			HubState.ExitBelt = function()
+				HubState.Treadmill.Riding = false
+				HubState.LeaveBelt()
+				local character = localPlayer.Character
+				local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+
+				if humanoid then
+					pcall(function()
+						humanoid.Jump = true
+						humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+					end)
+				end
+
+				task.wait(0.35)
+			end
+
+			HubState.Flying = false
+			HubState.Driving = 0
+
+			HubState.BeginFlight = function()
+				HubState.Flying = true
+				local character = localPlayer.Character
+				local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+
+				if humanoid then
+					humanoid.PlatformStand = true
+
+					pcall(function()
+						humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+					end)
+				end
+
+				return HubState.Root() ~= nil
+			end
+
+			HubState.SetFlightVelocity = function(assemblyLinearVelocity)
+				local v20 = HubState.Root()
+
+				if v20 then
+					v20.AssemblyLinearVelocity = assemblyLinearVelocity
+					v20.AssemblyAngularVelocity = Vector3.zero
+				end
+			end
+
+			HubState.EndFlight = function()
+				HubState.Flying = false
+				local v20 = HubState.Root()
+
+				if v20 then
+					pcall(function()
+						v20.AssemblyLinearVelocity = Vector3.zero
+						v20.AssemblyAngularVelocity = Vector3.zero
+					end)
+				end
+
+				local character = localPlayer.Character
+				character = character and character:FindFirstChildOfClass("Humanoid")
+
+				if character then
+					character.PlatformStand = false
+				end
+			end
+
+			do
+				local tbl26 = {
+					Enum.HumanoidStateType.FallingDown,
+					Enum.HumanoidStateType.Ragdoll,
+					Enum.HumanoidStateType.Physics,
+					Enum.HumanoidStateType.Seated,
+					Enum.HumanoidStateType.PlatformStanding,
+				}
+
+				local tbl27 = {}
+				local flag3 = false
+
+				HubState.GodMode = function(arg)
+					local character = localPlayer.Character
+					local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+					if not character or not humanoid then
+						return
+					end
+
+					if arg then
+						flag3 = true
+
+						for _, v20 in ipairs(tbl26) do
+							pcall(function()
+								humanoid:SetStateEnabled(v20, false)
+							end)
+						end
+
+						pcall(function()
+							humanoid.BreakJointsOnDeath = false
+						end)
+
+						for _, descendant in ipairs(character:GetDescendants()) do
+							if descendant:IsA("BasePart") and tbl27[descendant] == nil then
+								tbl27[descendant] = descendant.CanCollide
+
+								pcall(function()
+									descendant.CanCollide = false
+								end)
+							end
+						end
+					elseif flag3 then
+						flag3 = false
+
+						for _, v20 in ipairs(tbl26) do
+							pcall(function()
+								humanoid:SetStateEnabled(v20, true)
+							end)
+						end
+
+						for k, v20 in pairs(tbl27) do
+							if k and k.Parent then
+								pcall(function()
+									k.CanCollide = v20
+								end)
+							end
+						end
+
+						table.clear(tbl27)
+					end
+				end
+			end
+
+			HubState.GodTick = function()
+				local character = localPlayer.Character
+				local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+
+				if humanoid and humanoid.Health < humanoid.MaxHealth then
+					pcall(function()
+						humanoid.Health = humanoid.MaxHealth
+					end)
+				end
+			end
+
+			HubState.StopWalking = function()
+				local character = localPlayer.Character
+				local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+				local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+
+				if humanoid and humanoidRootPart then
+					pcall(function()
+						humanoid:MoveTo(humanoidRootPart.Position)
+						humanoid:Move(Vector3.zero, false)
+					end)
+				end
+			end
+
+			local function fn14(arg, arg2, arg3, arg4)
+				local n8 = tonumber(arg2) or 6
+				local n9 = tonumber(arg3) or 10
+				local n10 = 0
+				local n11 = 0
+				local n12 = 0
+				local position
+
+				while n10 < n9 do
+					if type(arg4) == "function" and arg4() then
+						HubState.StopWalking()
+						return false
+					end
+					local character = localPlayer.Character
+					local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+					local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+					if not humanoidRootPart or not humanoid or humanoid.Health <= 0 then
+						return false
+					end
+
+					if (humanoidRootPart.Position - arg).Magnitude <= n8 then
+						HubState.StopWalking()
+						return true
+					end
+
+					if position and (humanoidRootPart.Position - position).Magnitude < 1 then
+						n11 += 0.2
+					else
+						n11 = 0
+					end
+
+					position = humanoidRootPart.Position
+					n12 = math.max(0, n12 - 0.2)
+
+					if n11 >= 0.8 and n12 <= 0 then
+						HubState.LeaveBelt()
+
+						pcall(function()
+							humanoid.Jump = true
+						end)
+
+						n11 = 0
+						n12 = 1.5
+					end
+
+					humanoid:MoveTo(arg)
+					n10 += task.wait(0.2)
+				end
+
+				HubState.StopWalking()
+				return HubState.DistanceTo(arg) <= n8
+			end
+
+			HubState.WalkTo = function(arg, arg2, arg3, arg4)
+				HubState.Driving = HubState.Driving + 1
+				local ok, result = pcall(fn14, arg, arg2, arg3, arg4)
+				HubState.Driving = math.max(0, HubState.Driving - 1)
+				return ok and result == true
+			end
+
+			local tbl26 = {
+				Boss = "Fractured",
+				GreatBloom = "Spirit Bloom",
+				Sakura = "Bloom",
+				Monstrous = "Parasite",
+			}
+
+			task.spawn(function()
+				local mutations = GameModules.Mutations
+
+				local ok, result = pcall(function()
+					return mutations.All()
+				end)
+
+				if ok and type(result) == "table" then
+					for k, v20 in pairs(result) do
+						local id = type(v20) == "table" and (v20.Id or k) or nil
+						local label = type(v20) == "table" and v20.Label or nil
+
+						if id ~= nil and type(label) == "string" and label ~= "" then
+							tbl26[tostring(id)] = label
+						end
+					end
+				end
+			end)
+
+			mutationName = function(arg)
+				return tbl26[tostring(arg)] or tostring(arg)
+			end
+
+			local tbl27
+
+			tbl27 = {
+				"Forest",
+				"Desert",
+				"Snow",
+				"Lake",
+				"Jungle",
+				"Volcano",
+				"Prehistoric",
+				"Cosmic",
+				"Abyss Ocean",
+				"Cherry Blossom",
+				"Light Dark",
+				"Titan Temple",
+			}
+
+			local tbl28 = {}
+
+			for _, v20 in ipairs(tbl27) do
+				tbl28[v20] = true
+			end
+
+			task.spawn(function()
+				local eggState = GameModules.EggState
+
+				local ok, result = pcall(function()
+					return eggState.ReadFieldEggs()
+				end)
+
+				if ok and type(result) == "table" and type(result.Records) == "table" then
+					for _, record in pairs(result.Records) do
+						local areaId = type(record) == "table" and record.AreaId or nil
+
+						if type(areaId) == "string" and not tbl28[areaId] then
+							tbl28[areaId] = true
+							table.insert(tbl27, areaId)
+						end
+					end
+				end
+			end)
+
+			tbl13 = { "Any" }
+			tbl14 = { Any = 0 }
+
+			do
+				local tbl29 = {}
+				local directory = GameModules.Assets and GameModules.Assets.Directory
+
+				if type(directory) == "table" then
+					for _, v20 in pairs(directory) do
+						local rarity = type(v20) == "table" and v20.Rarity or nil
+						local flag3 = type(rarity) == "table"
+
+						if flag3 then
+							flag3 = tonumber(rarity.RarityNumber or rarity.Rank)
+						end
+
+						flag3 = flag3 or nil
+
+						if flag3 then
+							local str2 = tbl29[flag3]
+
+							if not str2 then
+								str2 = tostring(rarity.DisplayName or rarity._id or flag3)
+							end
+
+							tbl29[flag3] = str2
+						end
+					end
+				end
+
+				if next(tbl29) == nil then
+					tbl29 = {
+						"Common",
+						"Uncommon",
+						"Rare",
+						"Epic",
+						"Legendary",
+						"Mythic",
+						"Cosmic",
+						"Secret",
+						"Eternal",
+						"Divine",
+					}
+				end
+
+				local tbl30 = {}
+
+				for k in pairs(tbl29) do
+					table.insert(tbl30, k)
+				end
+
+				table.sort(tbl30)
+
+				for _, v20 in ipairs(tbl30) do
+					table.insert(tbl13, tbl29[v20])
+					tbl14[tbl29[v20]] = v20
+				end
+			end
+
+			StealPriorities = { "Best Rarity", "Biggest Weight", "Best Mutation", "Highest Value", "Lowest Value" }
+			local tbl29
+			tbl29 = {}
+			local n8
+			n8 = 0
+			local tbl30
+			tbl30 = {}
+			local tbl31
+			tbl31 = {}
+			local tbl32
+			tbl32 = {}
+			local tbl33
+			tbl33 = {}
+			HubState.Steal.RiftPriority = false
+			HubState.Steal.RiftNeeds = {}
+			HubState.Steal.RiftRequirements = {}
+			HubState.Steal.RiftCurrent = {}
+
+			HubState.StockWaits = function(arg)
+				if type(arg) ~= "table" or not arg.RiftOnly or arg.RiftNow then
+					return false
+				end
+				local mech = HubState.Mech
+				if type(mech) ~= "table" or HubState.Toggle(mech.Handle, false) ~= true then
+					return false
+				end
+				return mech.Busy == true or workspace:FindFirstChild("ScrambleArenaPortal") ~= nil or localPlayer:GetAttribute("InScrambleArena") == true
+			end
+
+			HubState.Lab = {
+				Banners = {},
+				Reserved = {},
+				SkipOwned = true,
+				Stock = {},
+				StockEggs = {},
+				StockPer = 3,
+				Pools = {},
+				PoolLists = {},
+			}
+
+			HubState.Lab.Shares = {
+				Biohazard = {
+					{ "Cyclops Gorilla", 0.431 },
+					{ "Red Panda", 0.431 },
+					{ "Snowy Owl", 0.399 },
+					{ "Salamander", 0.381 },
+					{ "Pterodactyl", 0.234 },
+					{ "Galaxy Gecko", 0.202 },
+					{ "Ankylosaurus", 0.194 },
+					{ "Crane", 0.138 },
+					{ "Parrotfish", 0.126 },
+					{ "Centapede", 0.106 },
+					{ "Dodo", 0.104 },
+					{ "Swordfish", 0.1 },
+					{ "Koi", 0.046 },
+					{ "La Vacca Saturno Saturnita", 0.044 },
+					{ "Finned Thresher", 0.024 },
+					{ "Bronto", 0.019 },
+					{ "Triceratops", 0.013 },
+					{ "Orca", 0.009 },
+				},
+				Experimental = {
+					{ "Blade Head", 0.342 },
+					{ "Red Panda", 0.341 },
+					{ "Crab", 0.331 },
+					{ "Salamander", 0.327 },
+					{ "Snowy Owl", 0.324 },
+					{ "Mantis", 0.314 },
+					{ "Cyclops Gorilla", 0.178 },
+					{ "Galaxy Gecko", 0.161 },
+					{ "Crane", 0.135 },
+					{ "Kaiju Spider", 0.134 },
+					{ "Pterodactyl", 0.119 },
+					{ "Dodo", 0.096 },
+					{ "Centapede", 0.094 },
+					{ "Rhino", 0.034 },
+					{ "Koi", 0.032 },
+					{ "Ankylosaurus", 0.03 },
+					{ "La Vacca Saturno Saturnita", 0.01 },
+					{ "Bronto", 0.001 },
+					{ "Triceratops", 0.001 },
+				},
+				UnstableDNA = {
+					{ "Toro", 0.236 },
+					{ "Lamb", 0.232 },
+					{ "Blade Head", 0.228 },
+					{ "Imp", 0.223 },
+					{ "Crab", 0.22 },
+					{ "Moth", 0.219 },
+					{ "Demon Hound", 0.217 },
+					{ "Peacock", 0.21 },
+					{ "Mantis", 0.203 },
+					{ "Salamander", 0.165 },
+					{ "Dove", 0.104 },
+					{ "Flame Sprite", 0.103 },
+					{ "Galaxy Gecko", 0.103 },
+					{ "Kaiju Spider", 0.102 },
+					{ "Red Panda", 0.102 },
+					{ "Crane", 0.096 },
+					{ "Snowy Owl", 0.088 },
+					{ "Centapede", 0.064 },
+					{ "Cyclops Gorilla", 0.021 },
+					{ "Jellyfish", 0.02 },
+					{ "Dark Gargoyle", 0.019 },
+					{ "Rhino", 0.018 },
+					{ "Koi", 0.009 },
+					{ "La Vacca Saturno Saturnita", 0.001 },
+				},
+			}
+
+			HubState.Lab.Pickers = {}
+			HubState.Lab.ExtraPath = "ChilliLibrary/SAE_LabEggs.json"
+
+			HubState.Lab.RefreshPools = function()
+				local lab = HubState.Lab
+
+				local ok, result = pcall(function()
+					return require(ReplicatedStorage.Shared.Modules.ScrambleTradeInRecipes)
+				end)
+
+				if not ok or type(result) ~= "table" or type(result.Simulate) ~= "function" then
+					return
+				end
+				local HttpService = game:GetService("HttpService")
+				local tbl34 = {}
+
+				pcall(function()
+					if isfile(lab.ExtraPath) then
+						local data = HttpService:JSONDecode(readfile(lab.ExtraPath))
+
+						if type(data) == "table" then
+							tbl34 = data
+						end
+					end
+				end)
+
+				local flag3 = false
+
+				for k, share in pairs(lab.Shares) do
+					local ok2, result2 = pcall(result.Simulate, k, 4000)
+
+					if ok2 and type(result2) == "table" and type(result2.SlotPicks) == "table" then
+						local n9 = math.max(1, tonumber(result2.Runs) or 4000)
+						local tbl35 = {}
+
+						for _, slotPick in pairs(result2.SlotPicks) do
+							if type(slotPick) == "table" then
+								for k2, v20 in pairs(slotPick) do
+									local str2 = tostring(k2)
+									tbl35[str2] = (tbl35[str2] or 0) + (tonumber(v20) or 0)
+								end
+							end
+						end
+
+						local tbl36 = type(tbl34[k]) == "table" and tbl34[k] or {}
+						local tbl37 = {}
+						local tbl38 = {}
+						local flag4 = false
+
+						for _, v20 in ipairs(share) do
+							local v21 = v20[1]
+							local v22 = v20[2]
+
+							if (tbl35[v21] or 0) > 0 or v22 < 0.02 then
+								tbl37[v21] = true
+								table.insert(tbl38, { v21, v22 })
+							else
+								flag4 = true
+							end
+						end
+
+						for k2, v20 in pairs(tbl35) do
+							if not tbl37[k2] and v20 > 0 then
+								local num = tonumber(tbl36[k2])
+
+								if not num then
+									num = math.max(0.001, math.floor(v20 / n9 * 1000 + 0.5) / 1000)
+									tbl36[k2] = num
+									tbl34[k] = tbl36
+									flag3 = true
+								end
+
+								table.insert(tbl38, { k2, num })
+								flag4 = true
+							end
+						end
+
+						if flag4 then
+							table.sort(tbl38, function(arg, arg2)
+								if arg[2] ~= arg2[2] then
+									return arg[2] > arg2[2]
+								end
+								return arg[1] < arg2[1]
+							end)
+
+							lab.Shares[k] = tbl38
+							lab.Pools[k] = nil
+							lab.PoolLists[k] = nil
+							local v20 = lab.Pickers[k]
+
+							if v20 and v20.Handle and type(v20.Handle.SetOptions) == "function" and type(lab.LabelsFor) == "function" then
+								local v21, v22 = lab.LabelsFor(k)
+
+								if #v21 > 0 then
+									v20.CategoryOf = v22
+									pcall(v20.Handle.SetOptions, v20.Handle, v21, nil, true)
+								end
+							end
+						end
+					end
+
+					task.wait()
+				end
+
+				task.delay(0.3, function()
+					pcall(HubState.Lab.FixPickers)
+				end)
+
+				if flag3 and type(writefile) == "function" then
+					pcall(function()
+						if type(isfolder) == "function" and type(makefolder) == "function" and not isfolder("ChilliLibrary") then
+							makefolder("ChilliLibrary")
+						end
+
+						writefile(lab.ExtraPath, HttpService:JSONEncode(tbl34))
+					end)
+				end
+			end
+
+			HubState.Lab.FixPickers = function()
+				local lab = HubState.Lab
+				if not HubState.Steal.RiftPriority or type(lab.LabelsFor) ~= "function" then
+					return
+				end
+
+				for k, picker in pairs(lab.Pickers) do
+					local handle = picker.Handle
+					local value = type(handle) == "table" and rawget(handle, "Instance") or nil
+
+					if typeof(value) == "Instance" and value.AbsoluteSize.Y <= 2 and type(handle.SetOptions) == "function" then
+						local v20, v21 = lab.LabelsFor(k)
+
+						if #v20 > 0 then
+							picker.CategoryOf = v21
+							pcall(handle.SetOptions, handle, v20, nil, false)
+						end
+					end
+				end
+			end
+
+			HubState.Lab.PoolOf = function(arg)
+				local lab = HubState.Lab
+				local v20 = lab.Pools[arg]
+				if v20 then
+					return v20
+				end
+				local tbl34 = {}
+				local tbl35 = {}
+				local v21 = ipairs
+				local tbl36 = lab.Shares[tostring(arg)] or {}
+
+				for _, v22 in v21(tbl36) do
+					local v23 = v22[1]
+					local v24 = v22[2]
+
+					if v24 >= 0.05 then
+						tbl34[v23] = true
+					end
+
+					table.insert(tbl35, { Category = v23, Share = v24 })
+				end
+
+				lab.Pools[arg] = tbl34
+				lab.PoolLists[arg] = tbl35
+				return tbl34
+			end
+
+			HubState.Lab.IsLabPet = function(arg)
+				local lab = HubState.Lab
+
+				if not lab.PetSet then
+					local petSet = {}
+					local data = lab.Data
+
+					if type(data) == "table" and type(data.Banners) == "table" then
+						for _, banner in ipairs(data.Banners) do
+							local v20 = ipairs
+							local pets = type(banner) == "table" and type(banner.Pets) == "table" and banner.Pets or {}
+
+							for _, pet in v20(pets) do
+								if type(pet) == "table" and pet.AssetId ~= nil then
+									petSet[tostring(pet.AssetId)] = true
+								end
+							end
+						end
+					end
+
+					if next(petSet) == nil then
+						return false
+					end
+					lab.PetSet = petSet
+				end
+
+				return lab.PetSet[tostring(arg)] == true
+			end
+
+			HubState.Lab.StockActive = function()
+				return next(HubState.Lab.Stock) ~= nil
+			end
+
+			HubState.Lab.StockTargets = function()
+				local lab = HubState.Lab
+				local tbl34 = {}
+				if not HubState.Steal.RiftPriority or not lab.StockActive() then
+					return tbl34
+				end
+
+				for k in pairs(lab.Stock) do
+					local v20 = lab.StockEggs[k]
+					local v21 = pairs
+					local tbl35 = type(v20) == "table" and v20 or {}
+
+					for k2 in v21(tbl35) do
+						tbl34[k2] = lab.StockPer
+					end
+				end
+
+				return tbl34
+			end
+
+			HubState.Lab.Data = safeRequire(function()
+				return ReplicatedStorage.Data.ScrambleTradeIn
+			end)
+
+			HubState.Lab.Fallback = {
+				{ Id = "Biohazard", Name = "Biohazard Pets" },
+				{ Id = "Experimental", Name = "Experimental Pets" },
+				{ Id = "UnstableDNA", Name = "Unstable DNA" },
+			}
+
+			HubState.Lab.BannerList = function()
+				local data = HubState.Lab.Data
+				local tbl34 = {}
+
+				if type(data) == "table" and type(data.Banners) == "table" then
+					for _, banner in ipairs(data.Banners) do
+						if type(banner) == "table" and banner.Id ~= nil then
+							table.insert(tbl34, { Id = tostring(banner.Id), Name = tostring(banner.DisplayName or banner.Id) })
+						end
+					end
+				end
+
+				if #tbl34 == 0 then
+					return HubState.Lab.Fallback
+				end
+				return tbl34
+			end
+
+			HubState.Lab.BannerName = function(arg)
+				for _, v20 in ipairs(HubState.Lab.BannerList()) do
+					if v20.Id == tostring(arg) then
+						return v20.Name
+					end
+				end
+
+				return tostring(arg)
+			end
+
+			HubState.Lab.BannerOk = function(arg)
+				if next(HubState.Lab.Banners) == nil then
+					return true
+				end
+				return arg ~= nil and HubState.Lab.Banners[tostring(arg)] == true
+			end
+
+			HubState.Lab.PickedText = function()
+				local tbl34 = {}
+
+				for _, v20 in ipairs(HubState.Lab.BannerList()) do
+					if HubState.Lab.Banners[v20.Id] then
+						table.insert(tbl34, v20.Name)
+					end
+				end
+
+				return table.concat(tbl34, " or ")
+			end
+
+			local flag3
+			flag3 = false
+			local tbl34
+			tbl34 = {}
+			local n9
+			n9 = 0
+			v4 = StealPriorities[4]
+			local n10
+			n10 = 27.4
+			n7 = 400
+			local fn15
+			fn15 = nil
+
+			v5 = v19:CreateToggle({
+				Name = "Auto Steal",
+				Default = false,
+				Callback = function()
+					if fn15 then
+						fn15()
+					end
+				end,
+			})
+
+			for _, v20 in ipairs(tbl27) do
+				tbl29[v20] = true
+			end
+
+			patchDropdown(v19:CreateMultiDropdown({
+				Name = "Target Areas",
+				Options = tbl27,
+				Default = tbl27,
+				Callback = function(arg)
+					local tbl35 = {}
+
+					if type(arg) == "table" then
+						for k, v20 in pairs(arg) do
+							if v20 == true and type(k) == "string" then
+								tbl35[k] = true
+							elseif type(v20) == "string" then
+								tbl35[v20] = true
+							end
+						end
+					end
+
+					if next(tbl35) == nil then
+						for _, v20 in ipairs(tbl27) do
+							tbl35[v20] = true
+						end
+					end
+
+					tbl29 = tbl35
+				end,
+			}))
+
+			v19:CreateDropdown({
+				Name = "Min Rarity",
+				Note = "Steal eggs of the chosen rarity and every rarity above it",
+				Options = tbl13,
+				Default = tbl13[1],
+				Callback = function(arg)
+					n8 = tbl14[arg] or 0
+				end,
+			})
+
+			createValueSlider(v19, {
+				Name = "Min Steal Value",
+				Note = "Skip eggs worth less than this. Drag or type 250k, 50m, 1.5b",
+				Legacy = "Min Value To Steal",
+				SectionName = "Auto Steal",
+				OnRaw = function(arg)
+					n9 = arg
+				end,
+			})
+
+			do
+				local tbl35 = {}
+				local tbl36 = {}
+				local directory = GameModules.Assets and GameModules.Assets.Directory
+				local tbl37 = {}
+
+				if type(directory) == "table" then
+					for k, v20 in pairs(directory) do
+						local rarity = type(v20) == "table" and v20.Rarity or nil
+						local flag4 = type(rarity) == "table"
+
+						if flag4 then
+							flag4 = tonumber(rarity.RarityNumber or rarity.Rank)
+						end
+
+						flag4 = flag4 or nil
+
+						if flag4 then
+							table.insert(tbl37, {
+								Category = tostring(k),
+								Name = tostring(v20.DisplayName or k),
+								Rarity = flag4,
+								RarityName = tostring(rarity.DisplayName or rarity._id or flag4),
+							})
+						end
+					end
+				end
+
+				table.sort(tbl37, function(arg, arg2)
+					if arg.Rarity ~= arg2.Rarity then
+						return arg.Rarity > arg2.Rarity
+					end
+					return arg.Name < arg2.Name
+				end)
+
+				for _, v20 in ipairs(tbl37) do
+					local str2 = string.format("%s [%s]", v20.Name, v20.RarityName)
+
+					if tbl36[str2] then
+						str2 = string.format("%s [%s] (%s)", v20.Name, v20.RarityName, v20.Category)
+					end
+
+					table.insert(tbl35, str2)
+					tbl36[str2] = v20.Category
+				end
+
+				patchDropdown(v19:CreateMultiDropdown({
+					Name = "Target Specific Eggs",
+					Note = "Only steal these eggs (empty = all)",
+					Options = tbl35,
+					Default = {},
+					Callback = function(arg)
+						local tbl38 = {}
+
+						if type(arg) == "table" then
+							for k, v20 in pairs(arg) do
+								k = v20 == true and type(k) == "string" and k or type(v20) == "string" and v20 or nil
+
+								if k and tbl36[k] then
+									tbl38[tbl36[k]] = true
+								end
+							end
+						end
+
+						tbl30 = tbl38
+					end,
+				}))
+			end
+
+			do
+				local n11 = 30
+				local v20 = nil
+				local flag4 = false
+				local n12 = 0
+
+				local function fn16()
+					local tbl35 = {}
+					local save2 = GameModules.Save
+
+					if type(save2) == "table" and type(save2.Get) == "function" then
+						local ok, result = pcall(save2.Get)
+
+						if ok and type(result) == "table" then
+							local tbl36 = {}
+							local eggState = GameModules.EggState
+
+							if type(eggState) == "table" and type(eggState.ReadOwnerEggs) == "function" then
+								local ok2, result2 = pcall(eggState.ReadOwnerEggs, localPlayer.UserId)
+
+								if ok2 and type(result2) == "table" then
+									for k, v21 in pairs(result2) do
+										if type(v21) == "table" and v21.Placement ~= nil then
+											tbl36[k] = true
+										end
+									end
+								end
+							end
+
+							local v21 = pairs
+							local eggInventory = result.EggInventory or {}
+
+							for k, v22 in v21(eggInventory) do
+								if type(v22) == "table" and v22.AssetCategory ~= nil and not tbl36[k] then
+									local str2 = tostring(v22.AssetCategory)
+									tbl35[str2] = (tbl35[str2] or 0) + 1
+								end
+							end
+						end
+					end
+
+					return tbl35
+				end
+
+				local function fn17()
+					local lab = HubState.Lab
+					local tbl35 = {}
+					HubState.Steal.RiftCurrent = {}
+					local tbl36 = nil
+
+					if lab.StockActive() then
+						tbl36 = fn16()
+
+						for k, v21 in pairs(lab.StockTargets()) do
+							if (tbl36[k] or 0) < v21 then
+								tbl35[k] = true
+							end
+						end
+
+						local riftBanner = HubState.Steal.RiftBanner
+						if riftBanner == nil or not lab.Stock[riftBanner] then
+							return tbl35
+						end
+					end
+
+					local tbl37 = {}
+
+					for _, riftRequirement in ipairs(HubState.Steal.RiftRequirements) do
+						tbl37[riftRequirement] = (tbl37[riftRequirement] or 0) + 1
+					end
+
+					if next(tbl37) == nil then
+						return tbl35
+					end
+
+					if lab.SkipOwned then
+						tbl36 = tbl36 or fn16()
+					else
+						tbl36 = {}
+					end
+
+					local riftCurrent = {}
+
+					for k, v21 in pairs(tbl37) do
+						if (tbl36[k] or 0) < v21 then
+							tbl35[k] = true
+							riftCurrent[k] = true
+						end
+					end
+
+					HubState.Steal.RiftCurrent = riftCurrent
+					return tbl35
+				end
+
+				local function fn18()
+					local rfScrambleTradeInAskState = networking:FindFirstChild("RF/ScrambleTradeIn/AskState")
+					local isRemoteFunction = rfScrambleTradeInAskState and rfScrambleTradeInAskState:IsA("RemoteFunction")
+					local flag5 = false
+					local result = nil
+
+					if isRemoteFunction then
+						flag5, result = pcall(rfScrambleTradeInAskState.InvokeServer, rfScrambleTradeInAskState)
+					end
+
+					if not flag5 or type(result) ~= "table" or type(result.Requirements) ~= "table" then
+						if HubState.Lab.StockActive() then
+							HubState.Steal.RiftNeeds = fn17()
+						end
+
+						return
+					end
+
+					HubState.Steal.RiftBanner = result.BannerId ~= nil and tostring(result.BannerId) or nil
+					local riftRequirements = {}
+
+					if result.Unlocked ~= false and HubState.Lab.BannerOk(result.BannerId) then
+						for _, requirement in ipairs(result.Requirements) do
+							table.insert(riftRequirements, tostring(requirement))
+						end
+					end
+
+					HubState.Steal.RiftRequirements = riftRequirements
+					HubState.Steal.RiftNeeds = fn17()
+				end
+
+				Scheduler.Add(function()
+					if not HubState.Steal.RiftPriority or flag4 or os.clock() < n12 then
+						return false
+					end
+					flag4 = true
+					n12 = os.clock() + n11
+
+					task.spawn(function()
+						pcall(fn18)
+						flag4 = false
+					end)
+
+					return false
+				end)
+
+				local function recount()
+					if not HubState.Steal.RiftPriority then
+						return
+					end
+					local riftNeeds = HubState.Steal.RiftNeeds
+					local v21 = fn17()
+					local flag5 = false
+
+					for k in pairs(riftNeeds) do
+						if not v21[k] then
+							flag5 = true
+						end
+					end
+
+					for k in pairs(v21) do
+						if not riftNeeds[k] then
+							flag5 = true
+						end
+					end
+
+					HubState.Steal.RiftNeeds = v21
+
+					if flag5 then
+						Scheduler.Wake()
+					end
+				end
+
+				HubState.Lab.Recount = recount
+				local save2 = GameModules.Save
+
+				if type(save2) == "table" and type(save2.FieldSignal) == "function" then
+					for _, v21 in ipairs({ "EggInventory", "Inventory" }) do
+						local ok, result = pcall(save2.FieldSignal, v21)
+
+						if ok and type(result) == "table" and type(result.Connect) == "function" then
+							local ok2, result2 = pcall(result.Connect, result, function()
+								task.defer(recount)
+							end)
+
+							if ok2 and result2 then
+								registerCleanup(function()
+									pcall(function()
+										result2:Disconnect()
+									end)
+								end)
+							end
+						end
+					end
+				end
+
+				HubState.Lab.ForceSteal = function()
+					n12 = 0
+				end
+
+				v20 = v19:CreateToggle({
+					Name = "Steal Missing Lab Eggs",
+					Default = false,
+					Callback = function()
+						HubState.Steal.RiftPriority = HubState.Toggle(v20, false) == true
+						n12 = 0
+
+						if not HubState.Steal.RiftPriority then
+							HubState.Steal.RiftNeeds = {}
+						end
+
+						task.delay(0.3, function()
+							pcall(HubState.Lab.FixPickers)
+						end)
+
+						Scheduler.Wake()
+					end,
+				})
+
+				v19:CreateToggle({
+					Name = "Skip Owned Lab Eggs",
+					Note = "Only for the current recipe",
+					Default = true,
+					ShowWhen = v20,
+					Callback = function(arg)
+						HubState.Lab.SkipOwned = arg ~= false
+						pcall(recount)
+					end,
+				})
+
+				local tbl35 = {}
+				local tbl36 = {}
+
+				for _, v21 in ipairs(HubState.Lab.BannerList()) do
+					table.insert(tbl35, v21.Name)
+					tbl36[v21.Name] = v21.Id
+				end
+
+				v19:CreateMultiDropdown({
+					Name = "Stock Lab Eggs For",
+					Note = "Collects eggs for these banners even before they open",
+					Options = tbl35,
+					Default = {},
+					ShowWhen = v20,
+					Callback = function(arg)
+						local stock = {}
+
+						if type(arg) == "table" then
+							for k, v21 in pairs(arg) do
+								k = v21 == true and type(k) == "string" and k
+								local flag5
+
+								if k then
+									flag5 = k
+								else
+									flag5 = type(v21) == "string" and v21
+								end
+
+								flag5 = flag5 or nil
+
+								if flag5 and tbl36[flag5] then
+									stock[tbl36[flag5]] = true
+								end
+							end
+						end
+
+						HubState.Lab.Stock = stock
+						n12 = 0
+
+						task.spawn(function()
+							pcall(recount)
+						end)
+
+						Scheduler.Wake()
+					end,
+				})
+
+				local ok, result = pcall(function()
+					local directory = GameModules.Assets and GameModules.Assets.Directory
+					local tbl37 = { Biohazard = "Biohazard", Experimental = "Experimental", UnstableDNA = "Unstable DNA" }
+
+					HubState.Lab.LabelsFor = function(arg)
+						local tbl38 = {}
+						local tbl39 = {}
+						HubState.Lab.PoolOf(arg)
+						local tbl40 = HubState.Lab.PoolLists[arg] or {}
+
+						for _, v21 in ipairs(tbl40) do
+							local flag5 = type(directory) == "table" and directory[v21.Category] or nil
+							local n13 = v21.Share * 100
+							local str2 = n13 < 1 and "<1%" or string.format("%d%%", math.floor(n13 + 0.5))
+							local str3 = string.format("%s Egg (%s)", tostring(type(flag5) == "table" and flag5.DisplayName or v21.Category), str2)
+
+							if tbl39[str3] then
+								local format = string.format
+								local v22 = tostring
+								local displayName = type(flag5) == "table" and flag5.DisplayName or v21.Category
+								local category = v21.Category
+								str3 = format("%s Egg [%s] (%s)", v22(displayName), category, str2)
+							end
+
+							table.insert(tbl38, str3)
+							tbl39[str3] = v21.Category
+						end
+
+						return tbl38, tbl39
+					end
+
+					for _, v21 in ipairs(HubState.Lab.BannerList()) do
+						local id = v21.Id
+						local v22, v23 = HubState.Lab.LabelsFor(id)
+						local tbl38 = { CategoryOf = v23 }
+						HubState.Lab.Pickers[id] = tbl38
+						local tbl39 = {}
+
+						for i = 1, math.min(5, #v22) do
+							table.insert(tbl39, v22[i])
+						end
+
+						tbl38.Handle = v19:CreateMultiDropdown({
+							Name = (tbl37[id] or v21.Name) .. " Lab Eggs",
+							Options = v22,
+							Default = tbl39,
+							ShowWhen = v20,
+							Callback = function(arg)
+								local tbl40 = {}
+
+								if type(arg) == "table" then
+									for k, v24 in pairs(arg) do
+										k = v24 == true and type(k) == "string" and k
+										local flag5
+
+										if k then
+											flag5 = k
+										else
+											flag5 = type(v24) == "string" and v24
+										end
+
+										local v25 = flag5 or nil
+
+										if v25 and tbl38.CategoryOf[v25] then
+											tbl40[tbl38.CategoryOf[v25]] = true
+										end
+									end
+								end
+
+								HubState.Lab.StockEggs[id] = next(tbl40) ~= nil and tbl40 or nil
+								n12 = 0
+
+								task.spawn(function()
+									pcall(recount)
+								end)
+
+								Scheduler.Wake()
+							end,
+						})
+					end
+				end)
+
+				task.spawn(function()
+					pcall(HubState.Lab.RefreshPools)
+				end)
+
+				v19:CreateSlider({
+					Name = "Stock Per Egg",
+					Min = 1,
+					Max = 30,
+					Default = 3,
+					Increment = 1,
+					Unit = "",
+					ShowWhen = v20,
+					Callback = function(arg)
+						HubState.Lab.StockPer = math.clamp(math.floor(tonumber(arg) or 3), 1, 30)
+
+						task.spawn(function()
+							pcall(recount)
+						end)
+					end,
+				})
+			end
+
+			do
+				local n11 = 5
+				local n12 = 5
+				local n13 = 60
+				local v20 = nil
+				local n14 = 0
+				local n15 = 0
+				local flag4 = false
+				local tbl35 = {}
+
+				local function fn16()
+					local save2 = GameModules.Save
+
+					if type(save2) == "table" and type(save2.Get) == "function" then
+						local ok, result = pcall(save2.Get)
+						if ok and type(result) == "table" then
+							return result
+						end
+					end
+
+					return nil
+				end
+
+				local function fn17()
+					local v21 = fn16()
+					local directory = GameModules.Areas and GameModules.Areas.Directory
+					local directory2 = GameModules.Assets and GameModules.Assets.Directory
+					if not v21 or type(directory) ~= "table" or type(directory2) ~= "table" then
+						return
+					end
+					local index = type(v21.Index) == "table" and v21.Index or {}
+					local tbl36 = {}
+					local v22 = pairs
+					local inventory = v21.Inventory or {}
+
+					for _, v23 in v22(inventory) do
+						if type(v23) == "table" and v23.Category ~= nil then
+							tbl36[tostring(v23.Category)] = true
+						end
+					end
+
+					local v23 = pairs
+					local eggInventory = v21.EggInventory or {}
+
+					for _, v24 in v23(eggInventory) do
+						if type(v24) == "table" and v24.AssetCategory ~= nil then
+							tbl36[tostring(v24.AssetCategory)] = true
+						end
+					end
+
+					local tbl37 = {}
+
+					for _, v24 in pairs(directory) do
+						local flag5 = type(v24) == "table" and type(v24.Rarity) == "table"
+
+						if flag5 then
+							flag5 = tonumber(v24.Rarity.RarityNumber or v24.Rarity.Rank)
+						end
+
+						flag5 = flag5 or 0
+						local v25 = pairs
+						local dropTable = type(v24) == "table" and v24.DropTable or {}
+
+						for _, v26 in v25(dropTable) do
+							local flag6 = type(v26) == "table" and v26[1] or nil
+							local n16 = type(v26) == "table" and tonumber(v26[2]) or 0
+							local flag7 = flag6 ~= nil and directory2[flag6] or nil
+
+							if type(flag7) == "table" and n16 > 0 and flag7.DontRoll ~= true then
+								local str2 = tostring(flag6)
+
+								if index[flag6] ~= true and not tbl36[str2] and (tbl37[str2] == nil or flag5 > tbl37[str2]) then
+									tbl37[str2] = flag5
+								end
+							end
+						end
+					end
+
+					tbl34 = tbl37
+				end
+
+				local function fn18(arg, ...)
+					local v21 = networking:FindFirstChild(arg)
+					if not v21 or not v21:IsA("RemoteFunction") then
+						return false
+					end
+					local ok, result = pcall(v21.InvokeServer, v21, ...)
+					return ok and result ~= false
+				end
+
+				local function fn19(arg, arg2)
+					local tbl36 = {}
+					if type(arg) ~= "table" then
+						return tbl36
+					end
+
+					for _, v21 in ipairs(arg2) do
+						local flag5 = arg
+
+						for _, v22 in ipairs(v21) do
+							flag5 = type(flag5) == "table" and flag5[v22] or nil
+						end
+
+						local v22 = ipairs
+						local tbl37 = type(flag5) == "table" and flag5 or {}
+
+						for _, v23 in v22(tbl37) do
+							if type(v23) == "table" and v23.AssetId ~= nil then
+								table.insert(tbl36, v23.AssetId)
+							end
+						end
+					end
+
+					return tbl36
+				end
+
+				local tbl36 = {
+					{
+						Id = "LimitedEgg",
+						Gear = "GravityDisruptor",
+						Module = "LimitedEgg",
+						Lists = { { "Entries" }, { "MechaReroll", "Entries" } },
+					},
+					{
+						Id = "BrainrotEgg",
+						Gear = "BeeLauncher",
+						Module = "BrainrotEgg",
+						Lists = { { "Entries" } },
+					},
+					{
+						Id = "MonsterEgg",
+						Gear = "BeeLauncher",
+						Module = "MonsterEgg",
+						Lists = { { "Entries" }, { "MechaEntries" } },
+					},
+				}
+
+				local function fn20()
+					local v21 = fn16()
+					if not v21 then
+						return
+					end
+					local index = type(v21.Index) == "table" and v21.Index or {}
+					local indexClaimedCategories = type(v21.IndexClaimedCategories) == "table" and v21.IndexClaimedCategories or {}
+
+					for k, v22 in pairs(index) do
+						if v22 == true and indexClaimedCategories[k] ~= true then
+							fn18("RF/Codex/AskRedeemAll")
+							break
+						end
+					end
+
+					local gearInventory = type(v21.GearInventory) == "table" and v21.GearInventory or {}
+
+					for _, v22 in ipairs(tbl36) do
+						local flag5 = (tonumber(gearInventory[v22.Gear]) or 0) <= 0
+
+						if flag5 then
+							flag5 = os.clock() >= (tbl35[v22.Id] or 0)
+						end
+
+						if flag5 then
+							local v23 = fn19(GameModules[v22.Module], v22.Lists)
+							local flag6 = #v23 > 0
+
+							for _, v24 in ipairs(v23) do
+								if index[v24] ~= true then
+									flag6 = false
+									break
+								end
+							end
+
+							if flag6 then
+								tbl35[v22.Id] = os.clock() + n13
+								fn18("RF/Codex/AskRedeemLimitedEgg", v22.Id)
+							end
+						end
+					end
+				end
+
+				Scheduler.Add(function()
+					local now = os.clock()
+
+					if flag3 and now >= n14 then
+						n14 = now + n11
+						pcall(fn17)
+					end
+
+					if not flag4 and now >= n15 and HubState.Toggle(HubState.IndexClaimHandle, false) then
+						flag4 = true
+						n15 = now + n12
+
+						task.spawn(function()
+							pcall(fn20)
+							flag4 = false
+						end)
+					end
+
+					return false
+				end)
+
+				v20 = v19:CreateToggle({
+					Name = "Steal Missing Index Eggs",
+					Note = "Also steal eggs missing from your index, highest area first",
+					Default = false,
+					Callback = function()
+						flag3 = HubState.Toggle(v20, false) == true
+						n14 = 0
+
+						if not flag3 then
+							tbl34 = {}
+						end
+
+						Scheduler.Wake()
+					end,
+				})
+
+				HubState.IndexClaimRestart = function()
+					n15 = 0
+					Scheduler.Wake()
+				end
+			end
+
+			HubState.Steal.PriorityHandle = v19:CreateDropdown({
+				Name = "Steal Priority",
+				Options = StealPriorities,
+				Default = StealPriorities[4],
+				Callback = function(arg)
+					if table.find(StealPriorities, arg) then
+						v4 = arg
+
+						if type(HubState.ResortSteal) == "function" then
+							HubState.ResortSteal()
+						end
+					end
+				end,
+			})
+
+			HubState.SafeCarry.InstantHandle = v19:CreateToggle({
+				Name = "Instant Steal",
+				Note = "Delivers the egg to the safe zone in a few seconds, needs enough Speed",
+				Default = false,
+				Callback = function(arg)
+					if type(arg) ~= "boolean" then
+						arg = HubState.Toggle(HubState.SafeCarry.InstantHandle, false)
+					end
+
+					HubState.SafeCarry.LineDrop = arg ~= false
+					HubState.SafeCarry.SpeedJitter = HubState.SafeCarry.LineDrop and 0 or 0.08
+
+					if HubState.StealPanelSync then
+						pcall(HubState.StealPanelSync)
+					end
+				end,
+			})
+
+			HubState.SafeCarry.RunHandle = v19:CreateSlider({
+				Name = "Tween Speed",
+				Note = "Over 100% may glitch",
+				Min = 50,
+				Max = 120,
+				Default = 100,
+				Increment = 1,
+				Unit = "%",
+				Callback = function(arg)
+					HubState.SafeCarry.RunSpeed = math.clamp(tonumber(arg) or 100, 50, 120) / 100
+				end,
+			})
+
+			v19:CreateSlider({
+				Name = "Carry Speed",
+				Min = 80,
+				Max = 120,
+				Default = 100,
+				Increment = 1,
+				Unit = "%",
+				Callback = function(arg)
+					HubState.SafeCarry.CarryScale = math.clamp(tonumber(arg) or 100, 80, 120) / 100
+				end,
+			})
+
+			HubState.BossPortalUp = function()
+				return workspace:FindFirstChild("ScrambleArenaPortal") ~= nil
+			end
+
+			HubState.AntiGuard.Handle = v2:CreateState({ Name = "Anti Guard Enabled", Default = false })
+
+			pcall(function()
+				HubState.AntiGuard.Enabled = HubState.AntiGuard.Handle:Get() == true
+			end)
+
+			pcall(function()
+				HubState.AntiGuard.Handle:Subscribe(function(arg)
+					if type(arg) ~= "boolean" then
+						arg = HubState.AntiGuard.Handle:Get()
+					end
+
+					HubState.AntiGuard.Enabled = arg == true
+
+					if HubState.StealPanelSync then
+						pcall(HubState.StealPanelSync)
+					end
+
+					if HubState.AntiGuard.Render and HubState.UiDefer then
+						HubState.UiDefer(function()
+							pcall(HubState.AntiGuard.Render, false)
+						end)
+					end
+				end)
+			end)
+
+			HubState.AntiGuard.PanelHandle = v19:CreateToggle({
+				Name = "Anti Guard Panel",
+				Default = true,
+				Callback = function(panelShown)
+					if type(panelShown) ~= "boolean" then
+						panelShown = HubState.Toggle(HubState.AntiGuard.PanelHandle, true)
+					end
+
+					HubState.AntiGuard.PanelShown = panelShown
+
+					if HubState.AntiGuard.ShowPanel then
+						pcall(HubState.AntiGuard.ShowPanel, panelShown)
+					end
+				end,
+			})
+
+			local v20
+			v20 = nil
+			local v21
+			v21 = nil
+			local v22
+			v22 = nil
+			local str2
+			str2 = "None"
+			local str3
+			str3 = "Idle"
+			local flag4
+			flag4 = false
+			local n11
+			n11 = 0
+			local tbl35
+			tbl35 = {}
+			local n12
+			n12 = 20
+			local uid
+			uid = nil
+			local fn16
+
+			fn16 = function(arg)
+				return arg ~= n11 or not HubState.Toggle(v20, false)
+			end
+
+			local fn17
+
+			do
+				local tbl36 = {}
+
+				local function fn18(arg)
+					if type(arg) ~= "number" or tbl36[arg] then
+						return
+					end
+					tbl36[arg] = true
+
+					task.delay(math.max(0, arg - workspace:GetServerTimeNow()) + 0.05, function()
+						tbl36[arg] = nil
+						Scheduler.Wake()
+					end)
+				end
+
+				local n13 = 0
+
+				fn17 = function()
+					local areaEggCycle = GameModules.AreaEggCycle
+					if type(areaEggCycle) ~= "table" then
+						return nil
+					end
+
+					local ok, result, result2, result3, result4 = pcall(function()
+						local serverTimeNow = workspace:GetServerTimeNow()
+						local nextResetTime = areaEggCycle.NextResetTime
+						return serverTimeNow, areaEggCycle.IsNightPhase(serverTimeNow), areaEggCycle.NextNightTime(serverTimeNow), nextResetTime(serverTimeNow)
+					end)
+
+					if not ok or type(result4) ~= "number" then
+						return nil
+					end
+
+					if result2 == true then
+						n13 = result4 + HubState.WallOpenDelay()
+						fn18(n13)
+						return n13, "night", result
+					end
+
+					if HubState.WallSealed() then
+						fn18(result + 0.3)
+						return math.max(n13, result), "wall", result
+					end
+
+					if type(result3) == "number" and result3 > result then
+						fn18(result3)
+					end
+
+					return nil
+				end
+			end
+
+			do
+				local areaEggResetWall = GameModules.AreaEggResetWall
+				local changed = type(areaEggResetWall) == "table" and areaEggResetWall.Changed or nil
+
+				if changed and type(changed.Connect) == "function" then
+					local ok, result = pcall(function()
+						return changed:Connect(function()
+							Scheduler.Wake()
+						end)
+					end)
+
+					if ok and result then
+						registerCleanup(function()
+							pcall(function()
+								result:Disconnect()
+							end)
+						end)
+					end
+				end
+			end
+
+			local n13
+			n13 = 8
+			local v23
+			v23 = nil
+			local n14
+			n14 = 0
+			local fn18, fn19, fn20
+
+			local function fn21(arg)
+				local tbl36 = {}
+				local str4 = "FirstAreaEgg_" .. tostring(localPlayer.UserId)
+				local eggState = GameModules.EggState
+
+				if type(eggState) == "table" and type(eggState.ReadFieldEggs) == "function" then
+					task.spawn(function()
+						local ok, result = pcall(eggState.ReadFieldEggs)
+
+						if ok and type(result) == "table" and type(result.Records) == "table" then
+							for _, record in pairs(result.Records) do
+								local flag5 = type(record) == "table" and type(record.Uid) == "string"
+
+								if flag5 then
+									flag5 = not (arg and string.sub(record.Uid, 1, #str4) == str4)
+								end
+
+								if flag5 then
+									tbl36[record.Uid] = true
+								end
+							end
+						end
+					end)
+				end
+
+				return tbl36
+			end
+
+			fn18 = function()
+				if v23 == nil then
+					return false
+				end
+
+				if HubState.IsNight() then
+					return true
+				end
+
+				if n14 == math.huge then
+					n14 = os.clock() + n13
+				end
+
+				return false
+			end
+
+			fn19 = function()
+				if v23 and n14 == math.huge then
+					return
+				end
+				v23 = fn21(true)
+				n14 = math.huge
+				table.clear(tbl31)
+				table.clear(tbl33)
+				table.clear(tbl32)
+				table.clear(tbl35)
+				uid = nil
+			end
+
+			fn20 = function()
+				if not v23 then
+					return false
+				end
+
+				if n14 <= os.clock() then
+					v23 = nil
+					return false
+				end
+				local v24 = fn21()
+				if next(v24) == nil then
+					return true
+				end
+				local flag5 = false
+				local flag6 = false
+
+				for k in pairs(v24) do
+					if v23[k] then
+						flag5 = true
+					else
+						flag6 = true
+					end
+				end
+
+				if not flag5 then
+					v23 = nil
+					return false
+				end
+				return not flag6
+			end
+
+			local fn22
+
+			do
+				local function fn23(arg)
+					local directory = GameModules.Assets and GameModules.Assets.Directory
+					local flag5 = type(directory) == "table" and directory[tostring(arg)] or nil
+					local rarity = type(flag5) == "table" and type(flag5.Rarity) == "table" and flag5.Rarity or nil
+					local tbl36 = {}
+
+					if rarity then
+						rarity = tonumber(rarity.RarityNumber or rarity.Rank)
+					end
+
+					tbl36.RarityNumber = rarity or 0
+					tbl36.EarningRate = type(flag5) == "table" and tonumber(flag5.EarningRate) or 0
+					return tbl36
+				end
+
+				local function fn24(arg)
+					local mutations = GameModules.Mutations
+
+					if type(mutations) == "table" and type(mutations.EarningsFor) == "function" then
+						local ok, result = pcall(mutations.EarningsFor, type(arg) == "table" and arg or {})
+						if ok and type(result) == "number" then
+							return result
+						end
+					end
+
+					return 1
+				end
+
+				local function fn25(arg, arg2)
+					local eggRecords = GameModules.EggRecords
+
+					if type(eggRecords) == "table" and type(eggRecords.WeightKgForScale) == "function" then
+						local ok, result = pcall(eggRecords.WeightKgForScale, arg, arg2)
+						if ok and type(result) == "number" then
+							return result
+						end
+					end
+
+					return 0
+				end
+
+				fn22 = function(arg, arg2)
+					local records = nil
+					local eggState = GameModules.EggState
+
+					if type(eggState) == "table" and type(eggState.ReadFieldEggs) == "function" then
+						task.spawn(function()
+							local ok, result = pcall(eggState.ReadFieldEggs)
+
+							if ok and type(result) == "table" and type(result.Records) == "table" and next(result.Records) ~= nil then
+								records = result.Records
+							end
+						end)
+					end
+
+					if not records then
+						local rfEggWorldAskFieldEggSnapshot = networking:FindFirstChild("RF/EggWorld/AskFieldEggSnapshot")
+						if not rfEggWorldAskFieldEggSnapshot or not rfEggWorldAskFieldEggSnapshot:IsA("RemoteFunction") then
+							return {}
+						end
+						local ok, result = pcall(rfEggWorldAskFieldEggSnapshot.InvokeServer, rfEggWorldAskFieldEggSnapshot)
+						records = ok and type(result) == "table" and result.Records or nil
+					end
+
+					if type(records) ~= "table" then
+						return {}
+					end
+					local tbl36 = {}
+					local tbl37 = {}
+
+					for _, record in pairs(records) do
+						local uid2 = type(record) == "table" and record.Uid or nil
+
+						if uid2 and record.State ~= "Claimed" then
+							tbl37[uid2] = true
+						end
+
+						local flag5 = uid2 and (record.State == "Slot" or record.State == "Dropped" or record.State == "Carried" and arg2 == true and arg ~= true and not (HubState.Steal.Carrying and uid2 == HubState.Steal.CarryUid))
+						local v24 = uid2 and tbl31[uid2] or nil
+						local flag6 = uid2 and tbl32[uid2] == true or false
+						local flag7 = arg ~= true and flag3 and uid2 and tbl34[tostring(record.AssetCategory)] or nil
+						local flag8 = arg ~= true and HubState.Steal.RiftPriority == true and uid2 ~= nil and HubState.Steal.RiftNeeds[tostring(record.AssetCategory)] == true
+						local flag9 = arg == true or v24 ~= nil or flag6 or flag8 or flag7 ~= nil or tbl29[tostring(record.AreaId)] == true
+						local flag10 = arg ~= true and v24 == nil and tbl33[uid2] == true
+						local flag11 = v23 ~= nil and v23[uid2] == true
+						flag5 = flag5 and typeof(record.BottomCFrame) == "CFrame"
+
+						if flag5 then
+							flag5 = (tbl35[uid2] or 0) <= os.clock()
+						end
+
+						if flag5 and flag9 and not flag10 and not flag11 then
+							local v25 = fn23(record.AssetCategory)
+							local str4 = tostring(record.AssetCategory)
+							local flag12 = v25.RarityNumber >= n8
+							local flag13 = next(tbl30) == nil or tbl30[str4] == true
+							local n15 = tonumber(record.AssetScale) or 1
+							local v26 = fn24(record.Mutations)
+							local n16 = n15 > 5 and (n15 / 5) ^ 1.2 * 19.637875755794113 or n15 ^ 1.85
+							local flag14 = n9 <= 0 or v25.EarningRate * n16 * v26 >= n9
+							flag14 = flag12 and flag13 and flag14
+							local flag15 = flag8 and not flag14 and not flag6 and v24 == nil and flag7 == nil
+							local lastSkip = arg ~= true and HubState.SafeCarry.Unsafe({ Uid = uid2, Category = str4 })
+
+							if lastSkip then
+								tbl31[uid2] = nil
+								tbl32[uid2] = nil
+								HubState.SafeCarry.LastSkip = lastSkip
+							elseif arg == true or v24 or flag6 or flag8 or flag7 ~= nil or flag14 then
+								table.insert(tbl36, {
+									Uid = uid2,
+									Category = str4,
+									Scale = n15,
+									State = record.State,
+									Rarity = v25.RarityNumber,
+									Weight = fn25(record.AssetCategory, n15),
+									Mutation = v26,
+									Value = v25.EarningRate * n16 * v26,
+									CFrame = record.BottomCFrame,
+									AreaId = tostring(record.AreaId),
+									Rift = arg ~= true and flag8,
+									RiftOnly = arg ~= true and flag15,
+									RiftNow = arg ~= true and flag15 and HubState.Steal.RiftCurrent[str4] == true,
+									Index = flag7,
+									Forced = arg ~= true and v24 and v24.At or nil,
+									Priority = arg ~= true and flag6,
+								})
+							end
+						end
+					end
+
+					if next(tbl37) ~= nil then
+						for k in pairs(tbl31) do
+							if not tbl37[k] then
+								tbl31[k] = nil
+							end
+						end
+
+						for k in pairs(tbl32) do
+							if not tbl37[k] then
+								tbl32[k] = nil
+							end
+						end
+
+						for k in pairs(tbl33) do
+							if not tbl37[k] then
+								tbl33[k] = nil
+							end
+						end
+					end
+
+					table.sort(tbl36, function(arg3, arg4)
+						if arg3.Forced ~= nil ~= arg4.Forced ~= nil then
+							return arg3.Forced ~= nil
+						end
+
+						if arg3.Forced and arg4.Forced and arg3.Forced ~= arg4.Forced then
+							return arg3.Forced < arg4.Forced
+						end
+
+						if arg3.Priority ~= arg4.Priority then
+							return arg3.Priority == true
+						end
+
+						if arg3.RiftOnly ~= arg4.RiftOnly then
+							return arg4.RiftOnly == true
+						end
+
+						if arg3.RiftOnly and arg3.RiftNow ~= arg4.RiftNow then
+							return arg3.RiftNow == true
+						end
+
+						if arg3.Index ~= nil ~= arg4.Index ~= nil then
+							return arg3.Index ~= nil
+						end
+
+						if arg3.Index and arg4.Index and arg3.Index ~= arg4.Index then
+							return arg3.Index > arg4.Index
+						end
+
+						if v4 == StealPriorities[2] and arg3.Weight ~= arg4.Weight then
+							return arg3.Weight > arg4.Weight
+						end
+
+						if v4 == StealPriorities[3] and arg3.Mutation ~= arg4.Mutation then
+							return arg3.Mutation > arg4.Mutation
+						end
+
+						if v4 == StealPriorities[4] and arg3.Value ~= arg4.Value then
+							return arg3.Value > arg4.Value
+						end
+
+						if v4 == StealPriorities[5] and arg3.Value ~= arg4.Value then
+							return arg3.Value < arg4.Value
+						end
+
+						if arg3.Rarity ~= arg4.Rarity then
+							return arg3.Rarity > arg4.Rarity
+						end
+
+						if arg3.Value ~= arg4.Value then
+							return arg3.Value > arg4.Value
+						end
+						return tostring(arg3.Uid) < tostring(arg4.Uid)
+					end)
+
+					return tbl36
+				end
+			end
+
+			local n15
+			n15 = 6
+			local fn23, fn24, fn25, fn26, fn27
+
+			do
+				local v24 = nil
+				local connection = nil
+
+				fn23 = function(arg, arg2, arg3, arg4, arg5)
+					local n16 = arg2 - arg.Position
+					local magnitude = n16.Magnitude
+					local n17 = math.max(arg4, 0.0041666666666666666)
+					local vector = Vector3.zero
+
+					if magnitude > 0.01 then
+						vector = n16.Unit * math.min(arg3, magnitude / n17)
+					end
+
+					local assemblyLinearVelocity = vector + Vector3.new(0, workspace.Gravity * n17 * 0.5, 0)
+
+					if magnitude > 2 then
+						if not arg5.mark then
+							arg5.mark = magnitude
+							arg5.clock = 0
+						end
+
+						arg5.clock = arg5.clock + arg4
+
+						if arg5.clock >= 0.4 then
+							if arg5.mark - magnitude < arg3 * 0.1 then
+								pcall(function()
+									arg.CFrame = arg.CFrame + n16.Unit * math.min(magnitude, arg3 * n17)
+								end)
+							end
+
+							arg5.mark = magnitude
+							arg5.clock = 0
+						end
+					else
+						arg5.mark = nil
+					end
+
+					pcall(function()
+						arg.AssemblyLinearVelocity = assemblyLinearVelocity
+						arg.AssemblyAngularVelocity = Vector3.zero
+					end)
+
+					return magnitude <= 0.5
+				end
+
+				fn24 = function()
+					local v25 = HubState.Root()
+
+					if v25 then
+						pcall(function()
+							v25.AssemblyLinearVelocity = Vector3.zero
+							v25.AssemblyAngularVelocity = Vector3.zero
+						end)
+					end
+				end
+
+				local connection2 = nil
+				local tbl36 = {}
+
+				fn25 = function()
+					v24 = nil
+
+					if connection then
+						connection:Disconnect()
+						connection = nil
+					end
+
+					if connection2 then
+						connection2:Disconnect()
+						connection2 = nil
+					end
+				end
+
+				fn26 = function()
+					local num = tonumber(localPlayer:GetAttribute("RagdollEndTime"))
+					return num ~= nil and num > workspace:GetServerTimeNow()
+				end
+
+				local flag5 = false
+
+				local function fn28()
+					if flag5 then
+						return true
+					end
+					return true
+				end
+
+				fn27 = function(arg, arg2)
+					v24 = arg
+					flag5 = arg2 == true
+					if connection or not arg then
+						return
+					end
+					tbl36 = {}
+
+					connection = RunService.Heartbeat:Connect(function()
+						if not v24 or fn28() or fn26() or HubState.AntiGuard.Busy then
+							return
+						end
+						local v25 = HubState.Root()
+						if not v25 then
+							return
+						end
+
+						pcall(function()
+							local rotation = v25.CFrame.Rotation
+							v25.CFrame = CFrame.new(v24) * rotation
+							v25.AssemblyLinearVelocity = Vector3.zero
+							v25.AssemblyAngularVelocity = Vector3.zero
+						end)
+					end)
+
+					connection2 = RunService.PreSimulation:Connect(function(deltaTime)
+						if not v24 or not fn28() or fn26() or HubState.AntiGuard.Busy then
+							return
+						end
+						local v25 = HubState.Root()
+
+						if v25 then
+							fn23(v25, v24, 400, deltaTime, tbl36)
+						end
+					end)
+				end
+			end
+
+			registerCleanup(fn25)
+			local fn28
+
+			fn28 = function()
+				fn25()
+				HubState.EndFlight()
+				HubState.GodMode(false)
+				local character = localPlayer.Character
+				local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+
+				if humanoid then
+					humanoid.PlatformStand = false
+				end
+			end
+
+			local n16, fn29, fn30
+
+			do
+				local n17 = 1.5
+				n16 = 0.6
+
+				local function fn31(arg, arg2)
+					local x = arg2.X
+					return (Vector3.new(arg.X, 0, arg.Z) - Vector3.new(x, 0, arg2.Z)).Magnitude
+				end
+
+				local function fn32(arg)
+					local ok, result = pcall(function()
+						return arg:GetPivot().Position
+					end)
+
+					return ok and result or nil
+				end
+
+				fn29 = function(arg, arg2, arg3)
+					local v24 = fn31(arg.Position, arg3)
+					local areaEggSlotsClient = workspace:FindFirstChild("AreaEggSlotsClient")
+
+					if areaEggSlotsClient then
+						for _, child in ipairs(areaEggSlotsClient:GetChildren()) do
+							if child:IsA("Model") and child.Name ~= arg2 then
+								local v25 = fn32(child)
+								if v25 and fn31(v25, arg.Position) + n17 < v24 then
+									return false
+								end
+							end
+						end
+					end
+
+					for _, child in ipairs(workspace:GetChildren()) do
+						if child:IsA("Model") and child.Name ~= arg2 and #child.Name == 32 and child:FindFirstChild("Hitbox") then
+							local v25 = fn32(child)
+							if v25 and fn31(v25, arg.Position) + n17 < v24 then
+								return false
+							end
+						end
+					end
+
+					return true
+				end
+
+				HubState.Steal.WrongEgg = function(carryUid)
+					local steal = HubState.Steal
+					if type(carryUid) ~= "string" or not steal.Carrying or steal.CarryUid == carryUid then
+						return false
+					end
+					local eggState = GameModules.EggState
+
+					if type(eggState) == "table" and type(eggState.DropFieldEgg) == "function" then
+						pcall(eggState.DropFieldEgg, "PlayerRequest")
+					end
+
+					local n18 = 0
+
+					while steal.Carrying and n18 < 1 do
+						n18 += RunService.Heartbeat:Wait()
+					end
+
+					steal.Carrying = false
+					steal.CarryUid = carryUid
+					return true
+				end
+
+				fn30 = function(arg, arg2, arg3)
+					local n18 = arg3 or 14
+					local v24 = nil
+					local v25 = nil
+
+					for _, child in ipairs(workspace:GetChildren()) do
+						if child.Name == "SmartPromptPart" and child:IsA("BasePart") then
+							local carryAreaEgg = child:FindFirstChild("CarryAreaEgg")
+
+							if carryAreaEgg and carryAreaEgg:IsA("ProximityPrompt") then
+								local v26 = fn31(child.Position, arg2)
+
+								if v26 < n18 then
+									n18 = v26
+									v24 = carryAreaEgg
+									v25 = child
+								end
+							end
+						end
+					end
+
+					if not v24 or not v25 then
+						return nil
+					end
+
+					if type(arg) == "string" and not fn29(v25, arg, arg2) then
+						return nil
+					end
+					return v24, v25
+				end
+			end
+
+			local fn31
+
+			fn31 = function(arg)
+				local eggState = GameModules.EggState
+
+				if type(arg) == "string" and type(eggState) == "table" and type(eggState.CarryFieldEgg) == "function" then
+					pcall(eggState.CarryFieldEgg, arg)
+				end
+			end
+
+			local fn32
+
+			do
+				local function fn33()
+					local carryUid = HubState.Steal.CarryUid
+					return type(carryUid) == "string" and carryUid or nil
+				end
+
+				local function fn34(arg)
+					local v24 = fn33()
+					if not v24 or type(arg) ~= "string" then
+						return true
+					end
+					return v24 == arg
+				end
+
+				local function fn35(arg)
+					if type(arg) ~= "string" then
+						return false
+					end
+					local v24 = fn22(false, true)
+					if #v24 == 0 then
+						return true
+					end
+
+					for _, v25 in ipairs(v24) do
+						if v25.Uid == arg then
+							return true
+						end
+					end
+
+					return false
+				end
+
+				local function fn36(arg)
+					local eggState = GameModules.EggState
+
+					if type(eggState) == "table" and type(eggState.DropFieldEgg) == "function" then
+						pcall(eggState.DropFieldEgg, "PlayerRequest")
+					end
+
+					local n17 = 0
+
+					while HubState.Steal.Carrying and n17 < 1 and not fn16(arg) do
+						n17 += RunService.Heartbeat:Wait()
+					end
+				end
+
+				fn32 = function(arg, arg2)
+					local n17 = 0
+
+					while not HubState.Steal.Carrying and n17 < n16 and not fn16(arg2) do
+						n17 += RunService.Heartbeat:Wait()
+					end
+
+					if not HubState.Steal.Carrying then
+						str3 = "The egg never reached the hand"
+						return false
+					end
+
+					if fn34(arg) then
+						return true
+					end
+					local v24 = fn33()
+					if fn35(v24) then
+						str3 = "Holding another egg that still matches, delivering it"
+						return true
+					end
+					str3 = "Wrong egg in hand, dropping it"
+					fn36(arg2)
+					return false
+				end
+			end
+
+			local fn33
+
+			fn33 = function(arg, arg2)
+				local eggState = GameModules.EggState
+				local position = typeof(arg.CFrame) == "CFrame" and arg.CFrame.Position or nil
+				if not position then
+					return false
+				end
+				local n17 = 0
+				local huge = math.huge
+				local n18 = 0
+
+				while n17 < 1.5 do
+					if fn16(arg2) then
+						return false
+					end
+
+					if HubState.Steal.Carrying and not HubState.Steal.WrongEgg(arg.Uid) then
+						return true
+					end
+
+					if huge >= 0.06 then
+						local v24 = fn30(arg.Uid, position)
+
+						if v24 then
+							pcall(function()
+								v24.HoldDuration = 0
+							end)
+
+							n18 = 0
+
+							if typeof(fireproximityprompt) == "function" then
+								pcall(fireproximityprompt, v24)
+							end
+						else
+							n18 += 1
+							if n18 >= 4 then
+								return false
+							end
+
+							if type(eggState) == "table" and type(eggState.CarryFieldEgg) == "function" then
+								pcall(eggState.CarryFieldEgg, arg.Uid)
+							end
+						end
+
+						huge = 0
+					end
+
+					local result = RunService.Heartbeat:Wait()
+					n17 += result
+					huge += result
+				end
+
+				return HubState.Steal.Carrying == true
+			end
+
+			local fn34
+
+			local v24 = safeRequire(function()
+				return ReplicatedStorage.Shared.Modules.Ragdoll
+			end)
+
+			fn34 = function()
+				local character = localPlayer.Character
+
+				if type(v24) == "table" and type(v24.IsRagdolled) == "function" then
+					local ok, result = pcall(v24.IsRagdolled, character)
+					if ok and result == true then
+						return true
+					end
+				end
+
+				local num = tonumber(localPlayer:GetAttribute("RagdollEndTime"))
+				if num and num > workspace:GetServerTimeNow() then
+					return true
+				end
+				character = character and character:FindFirstChildOfClass("Humanoid")
+				if character then
+					local state = character:GetState()
+					return state == Enum.HumanoidStateType.Physics or state == Enum.HumanoidStateType.Ragdoll or state == Enum.HumanoidStateType.FallingDown
+				end
+				return false
+			end
+
+			local fn35
+
+			fn35 = function(arg, arg2)
+				if HubState.Steal.Carrying then
+					return true
+				end
+				local rfEggWorldAskFieldEggSnapshot = networking:FindFirstChild("RF/EggWorld/AskFieldEggSnapshot")
+				if not rfEggWorldAskFieldEggSnapshot or not rfEggWorldAskFieldEggSnapshot:IsA("RemoteFunction") then
+					return false
+				end
+				local n17 = 0
+
+				while n17 < 1 do
+					if fn16(arg2) or HubState.Steal.Carrying then
+						return HubState.Steal.Carrying == true
+					end
+					local ok, result = pcall(rfEggWorldAskFieldEggSnapshot.InvokeServer, rfEggWorldAskFieldEggSnapshot)
+					ok = ok and type(result) == "table" and result.Records or nil
+
+					if type(ok) == "table" then
+						local flag5 = false
+
+						for _, v25 in pairs(ok) do
+							if type(v25) == "table" and v25.Uid == arg and (v25.State == "Slot" or v25.State == "Dropped") then
+								flag5 = true
+								break
+							end
+						end
+
+						if not
